@@ -66,6 +66,15 @@ const navItems = [
   { id: 'detect', icon: Search, label: 'Detect' },
 ];
 
+// Utility functions
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
+const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
 // Main Component
 export default function TraceGuardApp() {
   const [user, setUser] = useState<UserType | null>(null);
@@ -258,14 +267,6 @@ export default function TraceGuardApp() {
     setCurrentPage(navId as 'dashboard' | 'upload' | 'alerts' | 'detect');
     setSidebarOpen(false);
   };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  };
-
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
   // Loading state
   if (isLoading) {
