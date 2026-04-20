@@ -7,7 +7,7 @@ import {
   CheckCircle, AlertTriangle, XCircle, FileText, Download, Trash2,
   Lock, Fingerprint, Scan, Home, Menu, X, Eye, Copy,
   Plus, AlertCircle, Clock, FileCheck, ShieldCheck, Sparkles,
-  Check, CheckCheck, Zap, Rocket, Star, TrendingUp, Award
+  Check, CheckCheck, Zap, Rocket, Star, TrendingUp, Award, Users, Activity, Circle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from '@/hooks/use-toast';
 import React from 'react';
 import { useFirebase, analyticsEvents } from '@/components/FirebaseProvider';
+import { useRealtimeUsers } from '@/lib/useRealtimeUsers';
+import RealtimeUserDashboard from '@/components/RealtimeUserDashboard';
 
 // Types
 interface UserType {
@@ -67,6 +69,7 @@ const navItems = [
   { id: 'upload', icon: Shield, label: 'Protect' },
   { id: 'alerts', icon: Bell, label: 'Alerts' },
   { id: 'detect', icon: Search, label: 'Detect' },
+  { id: 'users', icon: Users, label: 'Users' },
 ];
 
 // Utility functions
@@ -379,9 +382,18 @@ export default function TraceGuardApp() {
   // Firebase Analytics
   const { isReady: firebaseReady } = useFirebase();
   
+  // Real-time user tracking
+  const { 
+    onlineUsers, 
+    onlineCount, 
+    updatePresence, 
+    logActivity,
+    setOffline 
+  } = useRealtimeUsers();
+  
   const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'upload' | 'detect' | 'alerts'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'upload' | 'detect' | 'alerts' | 'users'>('home');
   const [images, setImages] = useState<ImageType[]>([]);
   const [alerts, setAlerts] = useState<AlertType[]>([]);
   const [activeNav, setActiveNav] = useState('dashboard');
@@ -526,6 +538,9 @@ export default function TraceGuardApp() {
         // Firebase Analytics - Track login
         analyticsEvents.login('email');
         analyticsEvents.pageView('dashboard');
+        // Real-time presence - Update user online status
+        updatePresence(data.user.id, { name: data.user.name, email: data.user.email }, 'dashboard');
+        logActivity(data.user.id, data.user.name, 'logged in');
       } else { 
         toast({ title: 'Error', description: data.error, variant: 'destructive' }); 
       }
@@ -568,6 +583,11 @@ export default function TraceGuardApp() {
 
   const handleLogout = async () => {
     try {
+      // Real-time presence - Set user offline
+      if (user) {
+        await setOffline(user.id);
+        logActivity(user.id, user.name, 'logged out');
+      }
       await fetch('/api/auth/logout', { method: 'POST' });
       // Firebase Analytics - Track logout
       analyticsEvents.logout();
@@ -1050,6 +1070,11 @@ export default function TraceGuardApp() {
                   result={detectResult} 
                   onDetect={handleDetect} 
                 />
+              </motion.div>
+            )}
+            {currentPage === 'users' && (
+              <motion.div key="users" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                <UsersPage />
               </motion.div>
             )}
           </AnimatePresence>
@@ -2170,6 +2195,32 @@ function AlertsPage({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ===== USERS PAGE =====
+function UsersPage() {
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Real-time Users</h2>
+          <p className="text-sm text-muted-foreground">See who's online and their activities</p>
+        </div>
+        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          Live
+        </Badge>
+      </motion.div>
+      
+      {/* Real-time Dashboard */}
+      <RealtimeUserDashboard />
     </div>
   );
 }
