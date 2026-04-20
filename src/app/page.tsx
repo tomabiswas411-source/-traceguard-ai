@@ -102,48 +102,12 @@ async function fetchWithRetry(url: string, options?: RequestInit, maxRetries = 2
 
 // ===== FLOATING PARTICLES COMPONENT =====
 function FloatingParticles() {
-  const [particles, setParticles] = useState<Array<{
-    id: number;
-    size: number;
-    x: number;
-    delay: number;
-    duration: number;
-    color: string;
-  }>>([]);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // Generate particles only on client side to avoid hydration mismatch
-    const generatedParticles = Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      size: Math.random() * 4 + 2,
-      x: Math.random() * 100,
-      delay: Math.random() * 20,
-      duration: Math.random() * 20 + 15,
-      color: ['#7c3aed', '#ec4899', '#06b6d4'][Math.floor(Math.random() * 3)],
-    }));
-    setParticles(generatedParticles);
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
+  // Use CSS-only particles to avoid hydration mismatch
+  // Particles are defined in globals.css with CSS animations
   return (
     <div className="particles-container">
-      {particles.map((particle) => (
-        <div
-          key={particle.id}
-          className="particle"
-          style={{
-            width: particle.size,
-            height: particle.size,
-            left: `${particle.x}%`,
-            background: `radial-gradient(circle, ${particle.color} 0%, transparent 70%)`,
-            animationDuration: `${particle.duration}s`,
-            animationDelay: `${particle.delay}s`,
-            boxShadow: `0 0 ${particle.size * 2}px ${particle.color}`,
-          }}
-        />
+      {Array.from({ length: 30 }, (_, i) => (
+        <div key={i} className={`particle particle-${i % 3}`} />
       ))}
     </div>
   );
@@ -169,8 +133,15 @@ function AuroraBackground() {
 // ===== ANIMATED COUNTER =====
 function AnimatedCounter({ value, duration = 2 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
+  const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  useEffect(() => {
+    if (!mounted) return;
+    
     let startTime: number;
     let animationFrame: number;
     
@@ -189,9 +160,9 @@ function AnimatedCounter({ value, duration = 2 }: { value: number; duration?: nu
     
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, [value, duration]);
+  }, [value, duration, mounted]);
   
-  return <span className="counter-value">{displayValue}</span>;
+  return <span className="counter-value">{mounted ? displayValue : value}</span>;
 }
 
 // ===== 3D TILT CARD =====
