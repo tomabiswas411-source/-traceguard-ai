@@ -310,6 +310,28 @@
   }
 }
 
+/* Modern floating bottom nav */
+.bottom-nav-floating {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 0 8px 8px;
+}
+
+.bottom-nav-floating::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.3), transparent);
+  border-radius: 0 0 4px 4px;
+}
+
 /* Pattern backgrounds */
 .pattern-grid {
   background-image: 

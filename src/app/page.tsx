@@ -427,7 +427,7 @@ export default function TraceGuardApp() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 container-app py-4 pb-24 lg:pb-4">
+        <main className="flex-1 container-app py-4 pb-28 lg:pb-4">
           <AnimatePresence mode="wait">
             {currentPage === 'dashboard' && <motion.div key="dashboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}><Dashboard user={user} images={images} alerts={alerts} onProtect={handleProtect} onDelete={handleDeleteImage} onUpload={() => handleNavClick('upload')} /></motion.div>}
             {currentPage === 'upload' && <motion.div key="upload" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="max-w-2xl mx-auto"><UploadPage file={uploadFile} setFile={setUploadFile} progress={uploadProgress} result={uploadResult} onUpload={handleUpload} isDragging={isDragging} setIsDragging={setIsDragging} onProtect={handleProtect} /></motion.div>}
@@ -436,19 +436,48 @@ export default function TraceGuardApp() {
           </AnimatePresence>
         </main>
 
-        {/* Mobile Bottom Nav */}
-        <nav className="lg:hidden bottom-nav glass border-t border-border/50">
-          <div className="flex items-center justify-around py-2 px-2">
-            {navItems.map((item) => (
-              <button key={item.id} onClick={() => handleNavClick(item.id)} className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl touch-feedback ${activeNav === item.id ? 'text-primary' : 'text-muted-foreground'}`}>
-                <div className="relative">
-                  <item.icon className="w-5 h-5" />
-                  {item.id === 'alerts' && alerts.filter(a => !a.isRead).length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-shield text-white text-[10px] font-bold rounded-full flex items-center justify-center">{alerts.filter(a => !a.isRead).length}</span>}
-                </div>
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </button>
-            ))}
+        {/* Mobile Bottom Nav - Modern PWA Style */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
+          <div className="mx-2 mb-2">
+            <div className="glass rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+              <div className="flex items-center justify-around py-2 px-1">
+                {navItems.map((item) => {
+                  const isActive = activeNav === item.id;
+                  return (
+                    <button 
+                      key={item.id} 
+                      onClick={() => handleNavClick(item.id)} 
+                      className={`relative flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 touch-feedback ${
+                        isActive 
+                          ? 'bg-gradient-shield text-white shadow-lg scale-105' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                      }`}
+                    >
+                      <div className="relative">
+                        <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : ''}`} />
+                        {item.id === 'alerts' && alerts.filter(a => !a.isRead).length > 0 && (
+                          <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] ${isActive ? 'bg-white text-primary' : 'bg-gradient-shield text-white'} text-[10px] font-bold rounded-full flex items-center justify-center px-1`}>
+                            {alerts.filter(a => !a.isRead).length}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`text-[10px] font-semibold ${isActive ? 'text-white' : ''}`}>{item.label}</span>
+                    </button>
+                  );
+                })}
+                {/* Account Button */}
+                <button 
+                  onClick={() => handleLogout()} 
+                  className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 touch-feedback text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="text-[10px] font-semibold">Logout</span>
+                </button>
+              </div>
+            </div>
           </div>
+          {/* Safe area padding for iOS */}
+          <div className="h-[env(safe-area-inset-bottom,0px)]" />
         </nav>
       </div>
 
