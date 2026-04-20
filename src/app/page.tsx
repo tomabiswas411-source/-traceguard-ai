@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Upload, Search, LogOut, User, Bell, Image as ImageIcon, 
   CheckCircle, AlertTriangle, XCircle, FileText, Download, Trash2,
-  Lock, Fingerprint, Scan, Home, Menu, X, Eye, Copy, Check
+  Lock, Fingerprint, Scan, Home, Menu, X, Eye, Copy, ChevronRight,
+  Plus, AlertCircle, Clock, FileCheck, ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,15 +60,24 @@ interface Match {
   isExactMatch: boolean;
 }
 
+// Navigation items
+const navItems = [
+  { id: 'dashboard', icon: Home, label: 'Home' },
+  { id: 'upload', icon: Shield, label: 'Protect' },
+  { id: 'alerts', icon: Bell, label: 'Alerts' },
+  { id: 'account', icon: User, label: 'Account' },
+];
+
 // Main Component
 export default function TraceGuardApp() {
   // State
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'upload' | 'detect'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'upload' | 'detect' | 'alerts' | 'account'>('home');
   const [images, setImages] = useState<Image[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState('dashboard');
   
   // Auth form state
   const [email, setEmail] = useState('');
@@ -122,6 +132,7 @@ export default function TraceGuardApp() {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        setCurrentPage('dashboard');
       }
     } catch (error) {
       console.error('Auth check error:', error);
@@ -167,6 +178,7 @@ export default function TraceGuardApp() {
       if (response.ok) {
         setUser(data.user);
         setCurrentPage('dashboard');
+        setActiveNav('dashboard');
         toast({ title: 'Success', description: data.message });
       } else {
         toast({ title: 'Error', description: data.error, variant: 'destructive' });
@@ -191,6 +203,7 @@ export default function TraceGuardApp() {
       if (response.ok) {
         setUser(data.user);
         setCurrentPage('dashboard');
+        setActiveNav('dashboard');
         toast({ title: 'Success', description: data.message });
       } else {
         toast({ title: 'Error', description: data.error, variant: 'destructive' });
@@ -222,7 +235,6 @@ export default function TraceGuardApp() {
     const formData = new FormData();
     formData.append('file', file);
     
-    // Simulate progress
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => Math.min(prev + 10, 90));
     }, 200);
@@ -292,10 +304,8 @@ export default function TraceGuardApp() {
     setDetectResult(null);
     
     const formData = new FormData();
-    formData.append('file', formData.get('file') || file);
     formData.append('file', file);
     
-    // Simulate progress
     const progressInterval = setInterval(() => {
       setDetectProgress(prev => Math.min(prev + 5, 90));
     }, 100);
@@ -352,33 +362,22 @@ export default function TraceGuardApp() {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'success': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'warning': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'error': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-    }
-  };
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'success': return <CheckCircle className="w-4 h-4" />;
-      case 'warning': return <AlertTriangle className="w-4 h-4" />;
-      case 'error': return <XCircle className="w-4 h-4" />;
-      default: return <Bell className="w-4 h-4" />;
-    }
+  const handleNavClick = (navId: string) => {
+    setActiveNav(navId);
+    if (navId === 'dashboard') setCurrentPage('dashboard');
+    else if (navId === 'upload') setCurrentPage('upload');
+    else if (navId === 'alerts') setCurrentPage('alerts');
+    else if (navId === 'account') setCurrentPage('account');
+    setSidebarOpen(false);
   };
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-hero sparkle-bg flex items-center justify-center">
         <div className="text-center">
           <div className="spinner mx-auto mb-4" />
           <p className="text-muted-foreground">Loading TraceGuard AI...</p>
@@ -387,319 +386,322 @@ export default function TraceGuardApp() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-hero flex flex-col">
-      {/* Header */}
-      <header className="glass sticky top-0 z-50 border-b border-border/50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <motion.div 
-              className="flex items-center gap-3 cursor-pointer"
-              onClick={() => setCurrentPage(user ? 'dashboard' : 'home')}
-              whileHover={{ scale: 1.02 }}
-            >
-              <img 
-                src="/logo.png" 
-                alt="TraceGuard AI" 
-                className="h-10 w-10 rounded-lg object-cover"
-              />
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                  TraceGuard AI
-                </h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">Image Protection Platform</p>
-              </div>
-            </motion.div>
-
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-2">
-              {user ? (
-                <>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setCurrentPage('dashboard')}
-                    className={currentPage === 'dashboard' ? 'bg-primary/20' : ''}
-                  >
-                    <Home className="w-4 h-4 mr-2" /> Dashboard
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setCurrentPage('upload')}
-                    className={currentPage === 'upload' ? 'bg-primary/20' : ''}
-                  >
-                    <Upload className="w-4 h-4 mr-2" /> Upload
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setCurrentPage('detect')}
-                    className={currentPage === 'detect' ? 'bg-primary/20' : ''}
-                  >
-                    <Search className="w-4 h-4 mr-2" /> Detect
-                  </Button>
-                  <div className="relative ml-4">
-                    <Button variant="ghost" size="sm">
-                      <Bell className="w-4 h-4" />
-                      {alerts.filter(a => !a.isRead).length > 0 && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center">
-                          {alerts.filter(a => !a.isRead).length}
-                        </span>
-                      )}
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2 ml-2 px-3 py-1.5 rounded-lg bg-secondary/50">
-                    <User className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{user.name}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={handleLogout}>
-                    <LogOut className="w-4 h-4 mr-2" /> Logout
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setCurrentPage('login')}
-                  >
-                    Login
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => setCurrentPage('register')}
-                    className="glow-purple"
-                  >
-                    Get Started
-                  </Button>
-                </>
-              )}
-            </nav>
-
-            {/* Mobile Menu Button */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-          </div>
-
-          {/* Mobile Menu */}
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="md:hidden mt-4 pt-4 border-t border-border/50"
+  // Auth pages (no sidebar)
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-hero sparkle-bg flex flex-col">
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-pink-100">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <motion.div 
+                className="flex items-center gap-3 cursor-pointer"
+                onClick={() => setCurrentPage('home')}
+                whileHover={{ scale: 1.02 }}
               >
-                {user ? (
-                  <div className="flex flex-col gap-2">
-                    <Button variant="ghost" onClick={() => { setCurrentPage('dashboard'); setMobileMenuOpen(false); }}>
-                      <Home className="w-4 h-4 mr-2" /> Dashboard
-                    </Button>
-                    <Button variant="ghost" onClick={() => { setCurrentPage('upload'); setMobileMenuOpen(false); }}>
-                      <Upload className="w-4 h-4 mr-2" /> Upload
-                    </Button>
-                    <Button variant="ghost" onClick={() => { setCurrentPage('detect'); setMobileMenuOpen(false); }}>
-                      <Search className="w-4 h-4 mr-2" /> Detect
-                    </Button>
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      <User className="w-4 h-4 text-primary" />
-                      <span className="text-sm">{user.name}</span>
-                    </div>
-                    <Button variant="ghost" onClick={() => { handleLogout(); setMobileMenuOpen(false); }}>
-                      <LogOut className="w-4 h-4 mr-2" /> Logout
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <Button variant="ghost" onClick={() => { setCurrentPage('login'); setMobileMenuOpen(false); }}>
-                      Login
-                    </Button>
-                    <Button onClick={() => { setCurrentPage('register'); setMobileMenuOpen(false); }} className="glow-purple">
-                      Get Started
-                    </Button>
-                  </div>
-                )}
+                <div className="w-10 h-10 rounded-xl bg-gradient-shield flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-foreground">TraceGuard AI</h1>
+                  <p className="text-xs text-muted-foreground hidden sm:block">Protect Before It's Misused</p>
+                </div>
+              </motion.div>
+
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setCurrentPage('login')}
+                  className="text-foreground"
+                >
+                  Login
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => setCurrentPage('register')}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  Get Started
+                </Button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 container mx-auto px-4 py-6">
+          <AnimatePresence mode="wait">
+            {currentPage === 'home' && (
+              <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <HomePage onGetStarted={() => setCurrentPage('register')} />
+              </motion.div>
+            )}
+
+            {currentPage === 'login' && (
+              <motion.div key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-md mx-auto">
+                <AuthForm type="login" email={email} password={password} setEmail={setEmail} setPassword={setPassword} onSubmit={handleLogin} isLoading={isSubmitting} onSwitch={() => setCurrentPage('register')} />
+              </motion.div>
+            )}
+
+            {currentPage === 'register' && (
+              <motion.div key="register" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-md mx-auto">
+                <AuthForm type="register" email={email} password={password} name={name} setEmail={setEmail} setPassword={setPassword} setName={setName} onSubmit={handleRegister} isLoading={isSubmitting} onSwitch={() => setCurrentPage('login')} />
               </motion.div>
             )}
           </AnimatePresence>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-pink-100 py-4 mt-auto">
+          <div className="container mx-auto px-4 text-center">
+            <p className="text-muted-foreground text-sm">© 2024 TraceGuard AI. Protect Before It's Misused.</p>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  // Authenticated layout with sidebar
+  return (
+    <div className="min-h-screen bg-gradient-hero sparkle-bg flex">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-pink-100 fixed h-full z-40">
+        {/* Logo */}
+        <div className="p-4 border-b border-pink-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-shield flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="font-bold text-foreground">TraceGuard AI</h1>
+              <p className="text-xs text-muted-foreground">Protect Before It's Misused</p>
+            </div>
+          </div>
         </div>
-      </header>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4">
+          <ul className="space-y-2">
+            {navItems.map((item) => (
+              <li key={item.id}>
+                <button
+                  onClick={() => handleNavClick(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    activeNav === item.id
+                      ? 'bg-primary text-white'
+                      : 'text-muted-foreground hover:bg-pink-50 hover:text-primary'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                  {item.id === 'alerts' && alerts.filter(a => !a.isRead).length > 0 && (
+                    <Badge className="ml-auto bg-white/20 text-white">{alerts.filter(a => !a.isRead).length}</Badge>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* User Section */}
+        <div className="p-4 border-t border-pink-100">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
+              <User className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-foreground truncate">{user.name}</p>
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleLogout} className="w-full border-pink-200 text-muted-foreground hover:bg-pink-50">
+            <LogOut className="w-4 h-4 mr-2" /> Logout
+          </Button>
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 bg-black/50 z-40"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              className="lg:hidden fixed left-0 top-0 h-full w-72 bg-white z-50 flex flex-col"
+            >
+              <div className="p-4 border-b border-pink-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-shield flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-white" />
+                  </div>
+                  <h1 className="font-bold text-foreground">TraceGuard AI</h1>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <nav className="flex-1 p-4">
+                <ul className="space-y-2">
+                  {navItems.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => handleNavClick(item.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                          activeNav === item.id
+                            ? 'bg-primary text-white'
+                            : 'text-muted-foreground hover:bg-pink-50 hover:text-primary'
+                        }`}
+                      >
+                        <item.icon className="w-5 h-5" />
+                        <span className="font-medium">{item.label}</span>
+                        {item.id === 'alerts' && alerts.filter(a => !a.isRead).length > 0 && (
+                          <Badge className="ml-auto">{alerts.filter(a => !a.isRead).length}</Badge>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+              <div className="p-4 border-t border-pink-100">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
+                    <User className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">{user.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="w-full">
+                  <LogOut className="w-4 h-4 mr-2" /> Logout
+                </Button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-6">
-        <AnimatePresence mode="wait">
-          {/* Home Page */}
-          {currentPage === 'home' && (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <HomePage onGetStarted={() => setCurrentPage('register')} />
-            </motion.div>
-          )}
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+        {/* Top Header */}
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-pink-100">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
+                <Menu className="w-5 h-5" />
+              </Button>
+              <h2 className="font-semibold text-foreground">
+                {activeNav === 'dashboard' && 'Dashboard'}
+                {activeNav === 'upload' && 'Protect Content'}
+                {activeNav === 'alerts' && 'Misuse Alerts'}
+                {activeNav === 'account' && 'My Account'}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setCurrentPage('detect')} className="text-muted-foreground hover:text-primary">
+                <Search className="w-4 h-4 mr-2" /> Detect
+              </Button>
+            </div>
+          </div>
+        </header>
 
-          {/* Login Page */}
-          {currentPage === 'login' && (
-            <motion.div
-              key="login"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-md mx-auto"
-            >
-              <AuthForm
-                type="login"
-                email={email}
-                password={password}
-                setEmail={setEmail}
-                setPassword={setPassword}
-                onSubmit={handleLogin}
-                isLoading={isSubmitting}
-                onSwitch={() => setCurrentPage('register')}
-              />
-            </motion.div>
-          )}
+        {/* Page Content */}
+        <main className="flex-1 p-4 pb-24 lg:pb-4">
+          <AnimatePresence mode="wait">
+            {currentPage === 'dashboard' && (
+              <motion.div key="dashboard" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <Dashboard user={user} images={images} alerts={alerts} onProtect={handleProtect} onDelete={handleDeleteImage} onUpload={() => handleNavClick('upload')} />
+              </motion.div>
+            )}
 
-          {/* Register Page */}
-          {currentPage === 'register' && (
-            <motion.div
-              key="register"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-md mx-auto"
-            >
-              <AuthForm
-                type="register"
-                email={email}
-                password={password}
-                name={name}
-                setEmail={setEmail}
-                setPassword={setPassword}
-                setName={setName}
-                onSubmit={handleRegister}
-                isLoading={isSubmitting}
-                onSwitch={() => setCurrentPage('login')}
-              />
-            </motion.div>
-          )}
+            {currentPage === 'upload' && (
+              <motion.div key="upload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
+                <UploadPage file={uploadFile} setFile={setUploadFile} progress={uploadProgress} result={uploadResult} onUpload={handleUpload} isDragging={isDragging} setIsDragging={setIsDragging} onProtect={handleProtect} />
+              </motion.div>
+            )}
 
-          {/* Dashboard Page */}
-          {currentPage === 'dashboard' && user && (
-            <motion.div
-              key="dashboard"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <Dashboard
-                user={user}
-                images={images}
-                alerts={alerts}
-                onProtect={handleProtect}
-                onDelete={handleDeleteImage}
-                onUpload={() => setCurrentPage('upload')}
-                onDetect={() => setCurrentPage('detect')}
-              />
-            </motion.div>
-          )}
+            {currentPage === 'alerts' && (
+              <motion.div key="alerts" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <AlertsPage alerts={alerts} />
+              </motion.div>
+            )}
 
-          {/* Upload Page */}
-          {currentPage === 'upload' && user && (
-            <motion.div
-              key="upload"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-2xl mx-auto"
-            >
-              <UploadPage
-                file={uploadFile}
-                setFile={setUploadFile}
-                progress={uploadProgress}
-                result={uploadResult}
-                onUpload={handleUpload}
-                isDragging={isDragging}
-                setIsDragging={setIsDragging}
-                onProtect={handleProtect}
-              />
-            </motion.div>
-          )}
+            {currentPage === 'account' && (
+              <motion.div key="account" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
+                <AccountPage user={user} onLogout={handleLogout} />
+              </motion.div>
+            )}
 
-          {/* Detect Page */}
-          {currentPage === 'detect' && user && (
-            <motion.div
-              key="detect"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-2xl mx-auto"
-            >
-              <DetectPage
-                file={detectFile}
-                setFile={setDetectFile}
-                progress={detectProgress}
-                result={detectResult}
-                onDetect={handleDetect}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
+            {currentPage === 'detect' && (
+              <motion.div key="detect" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-2xl mx-auto">
+                <DetectPage file={detectFile} setFile={setDetectFile} progress={detectProgress} result={detectResult} onDetect={handleDetect} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
 
-      {/* Footer */}
-      <footer className="glass border-t border-border/50 py-6 mt-auto">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground text-sm">
-            © 2024 TraceGuard AI. Protecting your digital content with advanced fingerprinting technology.
-          </p>
-        </div>
-      </footer>
+        {/* Mobile Bottom Navigation */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-pink-100 bottom-nav z-30">
+          <div className="flex items-center justify-around py-2">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
+                  activeNav === item.id ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <div className="relative">
+                  <item.icon className="w-5 h-5" />
+                  {item.id === 'alerts' && alerts.filter(a => !a.isRead).length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-xs rounded-full flex items-center justify-center">
+                      {alerts.filter(a => !a.isRead).length}
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs font-medium">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+      </div>
 
       {/* Certificate Dialog */}
       <Dialog open={certificateDialog?.open} onOpenChange={(open) => !open && setCertificateDialog(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto bg-white">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-foreground">
               <FileText className="w-5 h-5 text-primary" />
               Ownership Certificate
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-muted-foreground">
               Content ID: {certificateDialog?.contentId}
             </DialogDescription>
           </DialogHeader>
-          <div className="bg-secondary/30 p-4 rounded-lg font-mono text-xs whitespace-pre overflow-x-auto">
+          <div className="bg-pink-50 p-4 rounded-xl font-mono text-xs whitespace-pre overflow-x-auto">
             {certificateDialog?.certificate}
           </div>
           <div className="flex gap-2 mt-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => copyToClipboard(certificateDialog?.certificate || '')}
-            >
+            <Button variant="outline" size="sm" onClick={() => copyToClipboard(certificateDialog?.certificate || '')} className="border-pink-200 hover:bg-pink-50">
               <Copy className="w-4 h-4 mr-2" /> Copy Certificate
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                const blob = new Blob([certificateDialog?.certificate || ''], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `certificate-${certificateDialog?.contentId}.txt`;
-                a.click();
-              }}
-            >
+            <Button variant="outline" size="sm" onClick={() => {
+              const blob = new Blob([certificateDialog?.certificate || ''], { type: 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `certificate-${certificateDialog?.contentId}.txt`;
+              a.click();
+            }} className="border-pink-200 hover:bg-pink-50">
               <Download className="w-4 h-4 mr-2" /> Download
             </Button>
           </div>
@@ -712,75 +714,74 @@ export default function TraceGuardApp() {
 // Home Page Component
 function HomePage({ onGetStarted }: { onGetStarted: () => void }) {
   return (
-    <div className="py-12">
+    <div className="py-8">
       {/* Hero Section */}
-      <div className="text-center mb-16">
+      <div className="text-center mb-12">
         <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-6"
+        >
+          <div className="w-24 h-24 rounded-3xl bg-gradient-shield mx-auto flex items-center justify-center mb-4 animate-pulse-pink">
+            <ShieldCheck className="w-12 h-12 text-white" />
+          </div>
+        </motion.div>
+        <motion.h1
+          className="text-3xl md:text-4xl font-bold mb-4 text-foreground"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Badge variant="outline" className="mb-4 border-primary/30 text-primary">
-            AI-Powered Protection
-          </Badge>
-        </motion.div>
-        <motion.h1
-          className="text-4xl md:text-6xl font-bold mb-6"
+          Upload your Content
+          <br />
+          <span className="text-primary">Before It's Misused</span>
+        </motion.h1>
+        <motion.p
+          className="text-muted-foreground max-w-md mx-auto mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-            Protect Your Digital
-          </span>
-          <br />
-          <span className="text-foreground">Content with AI</span>
-        </motion.h1>
-        <motion.p
-          className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8"
+          Protect your digital images with invisible watermarks and unique fingerprints. Detect unauthorized use instantly.
+        </motion.p>
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          TraceGuard AI embeds invisible watermarks and generates unique fingerprints 
-          for your images, enabling detection of unauthorized use across the internet.
-        </motion.p>
-        <motion.div
-          className="flex flex-col sm:flex-row gap-4 justify-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Button size="lg" onClick={onGetStarted} className="glow-purple animate-pulse-glow">
-            <Shield className="w-5 h-5 mr-2" /> Start Protecting Now
-          </Button>
-          <Button size="lg" variant="outline">
-            <Eye className="w-5 h-5 mr-2" /> See How It Works
+          <Button size="lg" onClick={onGetStarted} className="bg-primary hover:bg-primary/90 glow-pink">
+            <Shield className="w-5 h-5 mr-2" /> Start Protecting
           </Button>
         </motion.div>
       </div>
 
-      {/* Features Grid */}
-      <div className="grid md:grid-cols-3 gap-6 mb-16">
+      {/* Stats */}
+      <motion.div
+        className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-12"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Card className="bg-white border-pink-100 card-hover">
+          <CardContent className="p-4 text-center">
+            <p className="text-3xl font-bold text-foreground">184</p>
+            <p className="text-sm text-muted-foreground">TOTAL</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-pink-100 card-hover">
+          <CardContent className="p-4 text-center">
+            <p className="text-3xl font-bold text-primary">24</p>
+            <p className="text-sm text-muted-foreground">MISUSE ALERTS</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Features */}
+      <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
         {[
-          {
-            icon: <Lock className="w-8 h-8" />,
-            title: 'Invisible Watermarking',
-            description: 'Embed undetectable watermarks in your images that survive compression, cropping, and editing.',
-            color: 'from-purple-500 to-purple-600',
-          },
-          {
-            icon: <Fingerprint className="w-8 h-8" />,
-            title: 'Content Fingerprinting',
-            description: 'Generate unique fingerprints for each image using advanced perceptual hashing algorithms.',
-            color: 'from-pink-500 to-pink-600',
-          },
-          {
-            icon: <Scan className="w-8 h-8" />,
-            title: 'Duplicate Detection',
-            description: 'Automatically detect when your protected content is reused or duplicated elsewhere.',
-            color: 'from-blue-500 to-blue-600',
-          },
+          { icon: Lock, title: 'Invisible Watermark', desc: 'Embedded in your content' },
+          { icon: Fingerprint, title: 'Unique Fingerprint', desc: 'AI-powered detection' },
+          { icon: Scan, title: 'Instant Alerts', desc: 'Real-time monitoring' },
         ].map((feature, i) => (
           <motion.div
             key={i}
@@ -788,70 +789,18 @@ function HomePage({ onGetStarted }: { onGetStarted: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 + i * 0.1 }}
           >
-            <Card className="glass h-full hover:border-primary/30 transition-all duration-300 group">
-              <CardHeader>
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  {feature.icon}
+            <Card className="bg-white border-pink-100 card-hover">
+              <CardContent className="p-4 text-center">
+                <div className="w-12 h-12 rounded-xl bg-pink-100 flex items-center justify-center mx-auto mb-3">
+                  <feature.icon className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle className="text-lg">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-muted-foreground">
-                  {feature.description}
-                </CardDescription>
+                <h3 className="font-semibold text-foreground mb-1">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground">{feature.desc}</p>
               </CardContent>
             </Card>
           </motion.div>
         ))}
       </div>
-
-      {/* How It Works */}
-      <div className="text-center mb-12">
-        <h2 className="text-2xl md:text-3xl font-bold mb-8">How It Works</h2>
-        <div className="grid md:grid-cols-4 gap-4">
-          {[
-            { step: '01', title: 'Upload', desc: 'Upload your image to TraceGuard' },
-            { step: '02', title: 'Protect', desc: 'Click "Protect Content" to embed watermark' },
-            { step: '03', title: 'Fingerprint', desc: 'Get unique Content ID and certificate' },
-            { step: '04', title: 'Detect', desc: 'Scan for duplicates anywhere' },
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              className="relative"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.8 + i * 0.1 }}
-            >
-              <div className="glass rounded-xl p-6 text-center">
-                <div className="text-3xl font-bold text-primary mb-2">{item.step}</div>
-                <h3 className="font-semibold mb-1">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
-              </div>
-              {i < 3 && (
-                <div className="hidden md:block absolute top-1/2 -right-2 transform -translate-y-1/2 text-primary">
-                  →
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* CTA */}
-      <motion.div
-        className="text-center glass rounded-2xl p-8 max-w-2xl mx-auto"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1.2 }}
-      >
-        <h3 className="text-xl font-bold mb-4">Ready to protect your content?</h3>
-        <p className="text-muted-foreground mb-6">
-          Join thousands of creators who trust TraceGuard AI to protect their digital assets.
-        </p>
-        <Button size="lg" onClick={onGetStarted} className="glow-purple">
-          Get Started Free
-        </Button>
-      </motion.div>
     </div>
   );
 }
@@ -881,15 +830,15 @@ function AuthForm({
   onSwitch: () => void;
 }) {
   return (
-    <Card className="glass">
+    <Card className="bg-white border-pink-100">
       <CardHeader className="text-center">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-shield flex items-center justify-center mx-auto mb-4">
           <Shield className="w-8 h-8 text-white" />
         </div>
-        <CardTitle className="text-2xl">
+        <CardTitle className="text-xl text-foreground">
           {type === 'login' ? 'Welcome Back' : 'Create Account'}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-muted-foreground">
           {type === 'login' 
             ? 'Sign in to access your protected content' 
             : 'Start protecting your digital content today'}
@@ -899,19 +848,19 @@ function AuthForm({
         <form onSubmit={onSubmit} className="space-y-4">
           {type === 'register' && (
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name" className="text-foreground">Name</Label>
               <Input
                 id="name"
                 type="text"
                 placeholder="Your name"
                 value={name}
                 onChange={(e) => setName?.(e.target.value)}
-                className="bg-secondary/50"
+                className="bg-pink-50 border-pink-100 focus:border-primary focus:ring-primary"
               />
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-foreground">Email</Label>
             <Input
               id="email"
               type="email"
@@ -919,11 +868,11 @@ function AuthForm({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-secondary/50"
+              className="bg-pink-50 border-pink-100 focus:border-primary focus:ring-primary"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-foreground">Password</Label>
             <Input
               id="password"
               type="password"
@@ -931,10 +880,10 @@ function AuthForm({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-secondary/50"
+              className="bg-pink-50 border-pink-100 focus:border-primary focus:ring-primary"
             />
           </div>
-          <Button type="submit" className="w-full glow-purple" disabled={isLoading}>
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
             {isLoading ? (
               <div className="spinner w-4 h-4 mr-2" />
             ) : (
@@ -973,7 +922,6 @@ function Dashboard({
   onProtect,
   onDelete,
   onUpload,
-  onDetect,
 }: {
   user: User;
   images: Image[];
@@ -981,155 +929,162 @@ function Dashboard({
   onProtect: (id: string) => void;
   onDelete: (id: string) => void;
   onUpload: () => void;
-  onDetect: () => void;
 }) {
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="glass rounded-2xl p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold mb-1">Welcome back, {user.name}!</h2>
-            <p className="text-muted-foreground">
-              You have {images.length} protected images and {alerts.filter(a => !a.isRead).length} unread alerts.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={onUpload} className="glow-purple">
-              <Upload className="w-4 h-4 mr-2" /> Upload
-            </Button>
-            <Button variant="outline" onClick={onDetect}>
-              <Search className="w-4 h-4 mr-2" /> Detect
-            </Button>
-          </div>
-        </div>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Images', value: images.length, icon: <ImageIcon className="w-5 h-5" /> },
-          { label: 'Protected', value: images.filter(i => i.watermarkEmbedded).length, icon: <Lock className="w-5 h-5" /> },
-          { label: 'Alerts', value: alerts.length, icon: <Bell className="w-5 h-5" /> },
-          { label: 'Unread', value: alerts.filter(a => !a.isRead).length, icon: <AlertTriangle className="w-5 h-5" /> },
-        ].map((stat, i) => (
-          <Card key={i} className="glass">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                  {stat.icon}
-                </div>
+        <Card className="bg-white border-pink-100 card-hover">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center">
+                <ImageIcon className="w-5 h-5 text-primary" />
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <div>
+                <p className="text-2xl font-bold text-foreground">{images.length}</p>
+                <p className="text-xs text-muted-foreground">Total Images</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-pink-100 card-hover">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{images.filter(i => i.watermarkEmbedded).length}</p>
+                <p className="text-xs text-muted-foreground">Protected</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-pink-100 card-hover">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{alerts.length}</p>
+                <p className="text-xs text-muted-foreground">Alerts</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-pink-100 card-hover">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-primary">{alerts.filter(a => !a.isRead).length}</p>
+                <p className="text-xs text-muted-foreground">Unread</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="images" className="space-y-4">
-        <TabsList className="glass">
-          <TabsTrigger value="images">My Images</TabsTrigger>
-          <TabsTrigger value="alerts">Alerts</TabsTrigger>
-        </TabsList>
+      {/* My Protected Content */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground">My Protected Content</h3>
+          <Button size="sm" onClick={onUpload} className="bg-primary hover:bg-primary/90">
+            <Plus className="w-4 h-4 mr-1" /> Upload
+          </Button>
+        </div>
 
-        <TabsContent value="images">
-          {images.length === 0 ? (
-            <Card className="glass">
-              <CardContent className="p-12 text-center">
-                <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No images yet</h3>
-                <p className="text-muted-foreground mb-4">Upload your first image to start protecting your content.</p>
-                <Button onClick={onUpload} className="glow-purple">
-                  <Upload className="w-4 h-4 mr-2" /> Upload Image
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {images.map((image) => (
-                <Card key={image.id} className="glass overflow-hidden group">
-                  <div className="aspect-video bg-secondary/30 relative overflow-hidden">
-                    <img
-                      src={`/api/images/${image.id}`}
-                      alt={image.originalName}
-                      className="w-full h-full object-cover"
-                    />
-                    {image.watermarkEmbedded && (
-                      <Badge className="absolute top-2 right-2 bg-green-500/20 text-green-400 border-green-500/30">
-                        <CheckCircle className="w-3 h-3 mr-1" /> Protected
-                      </Badge>
-                    )}
+        {images.length === 0 ? (
+          <Card className="bg-white border-pink-100">
+            <CardContent className="p-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-pink-100 flex items-center justify-center mx-auto mb-4">
+                <ImageIcon className="w-8 h-8 text-primary" />
+              </div>
+              <h4 className="font-medium text-foreground mb-2">No images yet</h4>
+              <p className="text-sm text-muted-foreground mb-4">Upload your first image to start protecting</p>
+              <Button onClick={onUpload} className="bg-primary hover:bg-primary/90">
+                <Upload className="w-4 h-4 mr-2" /> Upload Image
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {images.map((image) => (
+              <Card key={image.id} className="bg-white border-pink-100 overflow-hidden card-hover">
+                <div className="aspect-video bg-pink-50 relative">
+                  <img
+                    src={`/api/images/${image.id}`}
+                    alt={image.originalName}
+                    className="w-full h-full object-cover"
+                  />
+                  {image.watermarkEmbedded && (
+                    <Badge className="absolute top-2 right-2 bg-green-500 text-white">
+                      <CheckCircle className="w-3 h-3 mr-1" /> Protected
+                    </Badge>
+                  )}
+                </div>
+                <CardContent className="p-3">
+                  <p className="font-medium text-foreground truncate text-sm">{image.originalName}</p>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    <span>{formatFileSize(image.size)}</span>
+                    <span>•</span>
+                    <span>{formatDate(image.createdAt)}</span>
                   </div>
-                  <CardContent className="p-4">
-                    <h4 className="font-medium truncate mb-1">{image.originalName}</h4>
-                    <div className="text-xs text-muted-foreground space-y-1 mb-3">
-                      <p>Content ID: <span className="font-mono">{image.contentId}</span></p>
-                      <p>Size: {formatFileSize(image.size)}</p>
-                      <p>Uploaded: {formatDate(image.createdAt)}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      {!image.watermarkEmbedded && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => onProtect(image.id)}
-                          className="flex-1 glow-purple"
-                        >
-                          <Shield className="w-3 h-3 mr-1" /> Protect
-                        </Button>
-                      )}
-                      <Button 
-                        size="sm" 
-                        variant="destructive" 
-                        onClick={() => onDelete(image.id)}
-                      >
-                        <Trash2 className="w-3 h-3" />
+                  <div className="flex gap-2 mt-3">
+                    {!image.watermarkEmbedded && (
+                      <Button size="sm" onClick={() => onProtect(image.id)} className="flex-1 bg-primary hover:bg-primary/90">
+                        <Shield className="w-3 h-3 mr-1" /> Protect
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="alerts">
-          {alerts.length === 0 ? (
-            <Card className="glass">
-              <CardContent className="p-12 text-center">
-                <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
-                <h3 className="text-lg font-semibold mb-2">No alerts</h3>
-                <p className="text-muted-foreground">You're all caught up!</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {alerts.map((alert) => (
-                <Alert key={alert.id} className={`glass ${getSeverityColor(alert.severity)}`}>
-                  <div className="flex items-start gap-3">
-                    {getSeverityIcon(alert.severity)}
-                    <div className="flex-1">
-                      <h4 className="font-medium">{alert.title}</h4>
-                      <AlertDescription className="text-sm opacity-80">
-                        {alert.message}
-                      </AlertDescription>
-                      <p className="text-xs mt-1 opacity-60">
-                        {formatDate(alert.createdAt)}
-                      </p>
-                    </div>
-                    {!alert.isRead && (
-                      <Badge variant="outline" className="text-xs">New</Badge>
                     )}
+                    <Button size="sm" variant="outline" onClick={() => onDelete(image.id)} className="border-pink-200 hover:bg-pink-50">
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
                   </div>
-                </Alert>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Recent Alerts */}
+      {alerts.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-foreground mb-4">Recent Alerts</h3>
+          <div className="space-y-3">
+            {alerts.slice(0, 3).map((alert) => (
+              <Card key={alert.id} className={`bg-white border-pink-100 ${alert.severity === 'warning' ? 'border-l-4 border-l-orange-400' : alert.severity === 'error' ? 'border-l-4 border-l-red-400' : ''}`}>
+                <CardContent className="p-3">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      alert.severity === 'warning' ? 'bg-orange-100' : 
+                      alert.severity === 'error' ? 'bg-red-100' : 
+                      alert.severity === 'success' ? 'bg-green-100' : 'bg-blue-100'
+                    }`}>
+                      {alert.severity === 'warning' ? (
+                        <AlertTriangle className="w-4 h-4 text-orange-500" />
+                      ) : alert.severity === 'error' ? (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      ) : alert.severity === 'success' ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Bell className="w-4 h-4 text-blue-500" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground text-sm">{alert.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{alert.message}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1173,151 +1128,241 @@ function UploadPage({
   };
 
   return (
-    <Card className="glass">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="w-5 h-5 text-primary" />
-          Upload Image
+    <Card className="bg-white border-pink-100">
+      <CardHeader className="text-center">
+        {result?.success ? (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="w-20 h-20 rounded-2xl bg-gradient-shield mx-auto mb-4"
+          >
+            <div className="w-full h-full flex items-center justify-center">
+              <CheckCircle className="w-10 h-10 text-white" />
+            </div>
+          </motion.div>
+        ) : (
+          <div className="w-16 h-16 rounded-2xl bg-gradient-shield flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
+        )}
+        <CardTitle className="text-foreground">
+          {result?.success ? 'Protection Added!' : 'Upload Image'}
         </CardTitle>
-        <CardDescription>
-          Upload your image to protect it with invisible watermark and fingerprinting.
+        <CardDescription className="text-muted-foreground">
+          {result?.success 
+            ? 'Your content is now protected' 
+            : 'Select an image to protect with watermark and fingerprint'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Drop Zone */}
-        <div
-          className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
-            isDragging 
-              ? 'border-primary bg-primary/10 scale-102' 
-              : 'border-border hover:border-primary/50'
-          }`}
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={handleDrop}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <motion.div
-            animate={{ scale: isDragging ? 1.05 : 1 }}
-            className="space-y-4"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto">
-              <Upload className="w-8 h-8 text-primary" />
-            </div>
-            <div>
-              <p className="text-lg font-medium mb-1">
-                {file ? file.name : 'Drag & drop your image here'}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {file 
-                  ? `${formatFileSize(file.size)} • ${file.type.split('/')[1].toUpperCase()}`
-                  : 'Supports JPG, PNG, WebP (max 10MB)'}
-              </p>
-            </div>
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-              Browse Files
-            </Button>
-          </motion.div>
-        </div>
-
-        {/* File Preview */}
-        {file && !result && (
-          <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
-                <ImageIcon className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-muted-foreground">{formatFileSize(file.size)}</p>
-              </div>
-            </div>
-            <Button 
-              onClick={() => onUpload(file)} 
-              disabled={progress > 0 && progress < 100}
-              className="glow-purple"
+        {!result ? (
+          <>
+            {/* Drop Zone */}
+            <div
+              className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+                isDragging 
+                  ? 'border-primary bg-pink-50 scale-102' 
+                  : 'border-pink-200 hover:border-primary/50'
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
             >
-              {progress > 0 && progress < 100 ? (
-                <div className="spinner w-4 h-4 mr-2" />
-              ) : (
-                <Upload className="w-4 h-4 mr-2" />
-              )}
-              Upload
-            </Button>
-          </div>
-        )}
-
-        {/* Progress */}
-        {progress > 0 && progress < 100 && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Processing...</span>
-              <span>{progress}%</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <div className="space-y-4">
+                <div className="w-14 h-14 rounded-xl bg-pink-100 flex items-center justify-center mx-auto">
+                  <Upload className="w-7 h-7 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground mb-1">
+                    {file ? file.name : 'Drag & drop your image here'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {file 
+                      ? `${formatFileSize(file.size)} • ${file.type.split('/')[1].toUpperCase()}`
+                      : 'JPG, PNG, WebP (max 10MB)'}
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="border-pink-200 hover:bg-pink-50">
+                  Browse Files
+                </Button>
+              </div>
             </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-        )}
 
-        {/* Result */}
-        {result && (
+            {/* File Preview */}
+            {file && (
+              <div className="flex items-center justify-between p-4 bg-pink-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center">
+                    <ImageIcon className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => onUpload(file)} 
+                  disabled={progress > 0 && progress < 100}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {progress > 0 && progress < 100 ? (
+                    <div className="spinner w-4 h-4 mr-2" />
+                  ) : (
+                    <Upload className="w-4 h-4 mr-2" />
+                  )}
+                  Upload
+                </Button>
+              </div>
+            )}
+
+            {/* Progress */}
+            {progress > 0 && progress < 100 && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Processing...</span>
+                  <span className="text-primary font-medium">{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-2 bg-pink-100" />
+              </div>
+            )}
+          </>
+        ) : (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`p-4 rounded-lg border ${
-              result.success 
-                ? result.isDuplicate 
-                  ? 'bg-yellow-500/10 border-yellow-500/30' 
-                  : 'bg-green-500/10 border-green-500/30'
-                : 'bg-red-500/10 border-red-500/30'
-            }`}
+            className="space-y-4"
           >
-            <div className="flex items-start gap-3">
-              {result.success ? (
-                result.isDuplicate ? (
-                  <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5" />
-                ) : (
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
-                )
-              ) : (
-                <XCircle className="w-5 h-5 text-red-500 mt-0.5" />
-              )}
-              <div className="flex-1">
-                <h4 className="font-medium">{result.message}</h4>
-                {result.image && (
-                  <div className="mt-2 text-sm space-y-1">
-                    <p>Content ID: <code className="font-mono text-primary">{result.image.contentId}</code></p>
-                    <p>Fingerprint: <code className="font-mono text-xs">{result.image.fingerprintHash.slice(0, 16)}...</code></p>
-                    {!result.image.watermarkEmbedded && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => onProtect(result.image!.id)}
-                        className="mt-3 glow-purple"
-                      >
-                        <Shield className="w-3 h-3 mr-1" /> Protect Content
-                      </Button>
-                    )}
-                  </div>
-                )}
+            {/* Success indicators */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                <span className="text-sm text-green-700">Invisible Watermark Embedded</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                <span className="text-sm text-green-700">Fingerprint Generated</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                <span className="text-sm text-green-700">Protected Successfully</span>
               </div>
             </div>
+
+            {result.image && (
+              <div className="p-4 bg-pink-50 rounded-xl">
+                <p className="text-sm text-muted-foreground mb-1">Content ID</p>
+                <p className="font-mono text-primary font-medium">{result.image.contentId}</p>
+              </div>
+            )}
+
+            {result.image && !result.image.watermarkEmbedded && (
+              <Button onClick={() => onProtect(result.image!.id)} className="w-full bg-primary hover:bg-primary/90">
+                <Shield className="w-4 h-4 mr-2" /> Protect Content
+              </Button>
+            )}
+
+            <Button variant="outline" onClick={() => { setFile(null); setUploadResult(null); }} className="w-full border-pink-200 hover:bg-pink-50">
+              Upload Another
+            </Button>
           </motion.div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
 
-        {/* Reset */}
-        {(result || file) && (
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => { setFile(null); }}
-          >
-            Upload Another Image
-          </Button>
-        )}
+// Alerts Page Component
+function AlertsPage({ alerts }: { alerts: Alert[] }) {
+  return (
+    <div className="space-y-4">
+      {alerts.length === 0 ? (
+        <Card className="bg-white border-pink-100">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            </div>
+            <h4 className="font-medium text-foreground mb-2">No Alerts</h4>
+            <p className="text-sm text-muted-foreground">You're all caught up!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        alerts.map((alert) => (
+          <Card key={alert.id} className={`bg-white border-pink-100 ${
+            alert.severity === 'warning' ? 'border-l-4 border-l-orange-400' : 
+            alert.severity === 'error' ? 'border-l-4 border-l-red-400' : 
+            alert.severity === 'success' ? 'border-l-4 border-l-green-400' : ''
+          }`}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  alert.severity === 'warning' ? 'bg-orange-100' : 
+                  alert.severity === 'error' ? 'bg-red-100' : 
+                  alert.severity === 'success' ? 'bg-green-100' : 'bg-blue-100'
+                }`}>
+                  {alert.severity === 'warning' ? (
+                    <AlertTriangle className="w-6 h-6 text-orange-500" />
+                  ) : alert.severity === 'error' ? (
+                    <AlertCircle className="w-6 h-6 text-red-500" />
+                  ) : alert.severity === 'success' ? (
+                    <CheckCircle className="w-6 h-6 text-green-500" />
+                  ) : (
+                    <Bell className="w-6 h-6 text-blue-500" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold text-foreground">{alert.title}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">{alert.message}</p>
+                    </div>
+                    {!alert.isRead && (
+                      <Badge className="bg-primary">New</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatDate(alert.createdAt)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
+    </div>
+  );
+}
+
+// Account Page Component
+function AccountPage({ user, onLogout }: { user: User; onLogout: () => void }) {
+  return (
+    <Card className="bg-white border-pink-100">
+      <CardHeader className="text-center">
+        <div className="w-20 h-20 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-4">
+          <User className="w-10 h-10 text-primary" />
+        </div>
+        <CardTitle className="text-foreground">{user.name}</CardTitle>
+        <CardDescription className="text-muted-foreground">{user.email}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-4 bg-pink-50 rounded-xl">
+          <p className="text-sm text-muted-foreground mb-1">Member Since</p>
+          <p className="font-medium text-foreground">{formatDate(user.createdAt)}</p>
+        </div>
+        <div className="p-4 bg-pink-50 rounded-xl">
+          <p className="text-sm text-muted-foreground mb-1">Account ID</p>
+          <p className="font-mono text-sm text-foreground">{user.id}</p>
+        </div>
+        <Button onClick={onLogout} variant="outline" className="w-full border-pink-200 hover:bg-pink-50 text-muted-foreground">
+          <LogOut className="w-4 h-4 mr-2" /> Logout
+        </Button>
       </CardContent>
     </Card>
   );
@@ -1347,100 +1392,100 @@ function DetectPage({
   };
 
   return (
-    <Card className="glass">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Search className="w-5 h-5 text-primary" />
-          Detect Duplicates
-        </CardTitle>
-        <CardDescription>
-          Scan an image to check if it matches any protected content in the database.
+    <Card className="bg-white border-pink-100">
+      <CardHeader className="text-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-shield flex items-center justify-center mx-auto mb-4">
+          <Search className="w-8 h-8 text-white" />
+        </div>
+        <CardTitle className="text-foreground">Detect Duplicates</CardTitle>
+        <CardDescription className="text-muted-foreground">
+          Scan an image to check for duplicates in the database
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* File Input */}
-        <div className="border-2 border-dashed border-border hover:border-primary/50 rounded-xl p-8 text-center transition-all">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-4">
-            <Scan className="w-8 h-8 text-primary" />
-          </div>
-          <p className="text-lg font-medium mb-1">
-            {file ? file.name : 'Select image to scan'}
-          </p>
-          <p className="text-sm text-muted-foreground mb-4">
-            We'll compare it against all protected images in the database
-          </p>
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-            Browse Files
-          </Button>
-        </div>
-
-        {/* File Preview */}
-        {file && !result && (
-          <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
-                <ImageIcon className="w-6 h-6 text-primary" />
+        {!result ? (
+          <>
+            {/* File Input */}
+            <div className="border-2 border-dashed border-pink-200 hover:border-primary/50 rounded-2xl p-8 text-center transition-all">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <div className="w-14 h-14 rounded-xl bg-pink-100 flex items-center justify-center mx-auto mb-4">
+                <Scan className="w-7 h-7 text-primary" />
               </div>
-              <div>
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-muted-foreground">{formatFileSize(file.size)}</p>
+              <p className="font-medium text-foreground mb-1">
+                {file ? file.name : 'Select image to scan'}
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Compare against all protected images
+              </p>
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="border-pink-200 hover:bg-pink-50">
+                Browse Files
+              </Button>
+            </div>
+
+            {/* File Preview */}
+            {file && (
+              <div className="flex items-center justify-between p-4 bg-pink-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center">
+                    <ImageIcon className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => onDetect(file)} 
+                  disabled={progress > 0 && progress < 100}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {progress > 0 && progress < 100 ? (
+                    <div className="spinner w-4 h-4 mr-2" />
+                  ) : (
+                    <Search className="w-4 h-4 mr-2" />
+                  )}
+                  Scan
+                </Button>
               </div>
-            </div>
-            <Button 
-              onClick={() => onDetect(file)} 
-              disabled={progress > 0 && progress < 100}
-              className="glow-blue"
-            >
-              {progress > 0 && progress < 100 ? (
-                <div className="spinner w-4 h-4 mr-2" />
-              ) : (
-                <Search className="w-4 h-4 mr-2" />
-              )}
-              Scan
-            </Button>
-          </div>
-        )}
+            )}
 
-        {/* Progress */}
-        {progress > 0 && progress < 100 && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Scanning database...</span>
-              <span>{progress}%</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-        )}
-
-        {/* Result */}
-        {result && (
+            {/* Progress */}
+            {progress > 0 && progress < 100 && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Scanning...</span>
+                  <span className="text-primary font-medium">{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-2 bg-pink-100" />
+              </div>
+            )}
+          </>
+        ) : (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-4"
           >
-            <div className={`p-4 rounded-lg border ${
-              result.isMatchFound 
-                ? 'bg-red-500/10 border-red-500/30' 
-                : 'bg-green-500/10 border-green-500/30'
-            }`}>
-              <div className="flex items-start gap-3">
+            {/* Result */}
+            <div className={`p-4 rounded-xl ${result.isMatchFound ? 'bg-red-50' : 'bg-green-50'}`}>
+              <div className="flex items-center gap-3">
                 {result.isMatchFound ? (
-                  <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
                 ) : (
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                  <CheckCircle className="w-6 h-6 text-green-500" />
                 )}
                 <div>
-                  <h4 className="font-medium">{result.message}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Scanned {result.totalScanned} images in the database
+                  <p className={`font-medium ${result.isMatchFound ? 'text-red-700' : 'text-green-700'}`}>
+                    {result.message}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Scanned {result.totalScanned} images
                   </p>
                 </div>
               </div>
@@ -1449,50 +1494,27 @@ function DetectPage({
             {/* Matches */}
             {result.isMatchFound && result.matches.length > 0 && (
               <div className="space-y-3">
-                <h4 className="font-medium">Matching Results</h4>
                 {result.matches.map((match, i) => (
-                  <div key={i} className="p-4 bg-secondary/30 rounded-lg">
+                  <div key={i} className="p-4 bg-pink-50 rounded-xl">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium">{match.originalName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Owner: {match.owner}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Content ID: <code className="font-mono text-primary">{match.contentId}</code>
-                        </p>
+                        <p className="font-medium text-foreground">{match.originalName}</p>
+                        <p className="text-sm text-muted-foreground">Owner: {match.owner}</p>
+                        <p className="text-xs text-muted-foreground font-mono mt-1">{match.contentId}</p>
                       </div>
-                      <div className="text-right">
-                        <Badge className={
-                          match.isExactMatch 
-                            ? 'bg-red-500/20 text-red-400 border-red-500/30' 
-                            : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                        }>
-                          {match.isExactMatch ? 'Exact Match' : `${Math.round(match.similarity * 100)}% Similar`}
-                        </Badge>
-                        {match.protectedAt && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Protected: {formatDate(match.protectedAt)}
-                          </p>
-                        )}
-                      </div>
+                      <Badge className={match.isExactMatch ? 'bg-red-500' : 'bg-orange-500'}>
+                        {match.isExactMatch ? 'Exact' : `${Math.round(match.similarity * 100)}%`}
+                      </Badge>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </motion.div>
-        )}
 
-        {/* Reset */}
-        {(result || file) && (
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => { setFile(null); }}
-          >
-            Scan Another Image
-          </Button>
+            <Button variant="outline" onClick={() => { setFile(null); setDetectResult(null); }} className="w-full border-pink-200 hover:bg-pink-50">
+              Scan Another
+            </Button>
+          </motion.div>
         )}
       </CardContent>
     </Card>
@@ -1512,22 +1534,4 @@ function formatDate(dateString: string): string {
     month: 'short',
     day: 'numeric',
   });
-}
-
-function getSeverityColor(severity: string): string {
-  switch (severity) {
-    case 'success': return 'border-green-500/30';
-    case 'warning': return 'border-yellow-500/30';
-    case 'error': return 'border-red-500/30';
-    default: return 'border-blue-500/30';
-  }
-}
-
-function getSeverityIcon(severity: string) {
-  switch (severity) {
-    case 'success': return <CheckCircle className="w-5 h-5 text-green-500" />;
-    case 'warning': return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
-    case 'error': return <XCircle className="w-5 h-5 text-red-500" />;
-    default: return <Bell className="w-5 h-5 text-blue-500" />;
-  }
 }
