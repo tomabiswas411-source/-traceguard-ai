@@ -19,24 +19,35 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Log Firebase initialization
+console.log('🔥 Firebase initialized with project:', firebaseConfig.projectId);
+
 // Initialize services with client-side check for analytics
 let analytics: ReturnType<typeof getAnalytics> | null = null;
 let messaging: ReturnType<typeof getMessaging> | null = null;
+let analyticsReady = false;
 
 // Analytics only works in browser
 if (typeof window !== 'undefined') {
   isSupported().then((supported) => {
     if (supported) {
       analytics = getAnalytics(app);
+      analyticsReady = true;
+      console.log('📊 Firebase Analytics is ready!');
+    } else {
+      console.log('⚠️ Firebase Analytics not supported in this environment');
     }
+  }).catch((err) => {
+    console.error('❌ Firebase Analytics error:', err);
   });
   
   isMessagingSupported().then((supported) => {
     if (supported) {
       try {
         messaging = getMessaging(app);
+        console.log('📨 Firebase Messaging is ready!');
       } catch (e) {
-        console.log('Messaging not available');
+        console.log('⚠️ Messaging not available');
       }
     }
   });
@@ -50,6 +61,17 @@ const auth = getAuth(app);
 
 // Initialize Storage
 const storage = getStorage(app);
+
+// Test function to verify connection
+export const testFirebaseConnection = () => {
+  return {
+    initialized: !!app,
+    projectId: firebaseConfig.projectId,
+    appId: firebaseConfig.appId,
+    analyticsSupported: analyticsReady,
+    timestamp: new Date().toISOString()
+  };
+};
 
 export { app, analytics, db, auth, storage, messaging };
 export default app;

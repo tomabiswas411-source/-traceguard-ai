@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { app, analytics, db, auth, storage, messaging } from '@/lib/firebase';
+import { app, analytics, db, auth, storage, messaging, testFirebaseConnection } from '@/lib/firebase';
 import { logEvent, Analytics } from 'firebase/analytics';
 import { getMessaging as getFirebaseMessaging, onMessage } from 'firebase/messaging';
 
@@ -13,6 +13,11 @@ interface FirebaseContextType {
   storage: typeof storage;
   messaging: typeof messaging;
   isReady: boolean;
+  connectionStatus: {
+    projectId: string;
+    appId: string;
+    analyticsSupported: boolean;
+  } | null;
 }
 
 // Track if we've logged the initialization
@@ -20,11 +25,24 @@ let hasInitialized = false;
 
 export function useFirebase(): FirebaseContextType {
   const [isReady, setIsReady] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{
+    projectId: string;
+    appId: string;
+    analyticsSupported: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!hasInitialized) {
       hasInitialized = true;
-      console.log('🔥 Firebase initialized successfully');
+      
+      // Test and log connection status
+      const status = testFirebaseConnection();
+      console.log('🔥 Firebase Connection Status:', status);
+      setConnectionStatus({
+        projectId: status.projectId,
+        appId: status.appId,
+        analyticsSupported: status.analyticsSupported
+      });
       
       // Log app open event
       if (analytics) {
@@ -32,6 +50,7 @@ export function useFirebase(): FirebaseContextType {
           app_name: 'TraceGuard AI',
           timestamp: new Date().toISOString()
         });
+        console.log('📊 Analytics event logged: app_open');
       }
     }
     setIsReady(true);
@@ -44,7 +63,8 @@ export function useFirebase(): FirebaseContextType {
     auth,
     storage,
     messaging,
-    isReady
+    isReady,
+    connectionStatus
   };
 }
 
