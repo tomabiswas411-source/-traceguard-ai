@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  password      String
+  name          String?
+  avatar        String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  images        Image[]
+  alerts        Alert[]
+  sessions      Session[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+}
+
+model Image {
+  id               String      @id @default(cuid())
+  userId           String
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalName     String
+  storedName       String
+  path             String
+  size             Int
+  mimeType         String
+  fingerprintHash  String      @unique
+  contentId        String      @unique
+  watermarkEmbedded Boolean    @default(false)
+  protectedAt      DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  alerts           Alert[]
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageId     String?
+  image       Image?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  type        String   // 'duplicate', 'protection', 'match'
+  title       String
+  message     String
+  severity    String   // 'info', 'warning', 'error', 'success'
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}

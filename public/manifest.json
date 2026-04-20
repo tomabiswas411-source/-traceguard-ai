@@ -1,0 +1,42 @@
+{
+  "name": "TraceGuard AI",
+  "short_name": "TraceGuard",
+  "description": "AI-powered platform that protects digital images with invisible watermarks and fingerprints",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities", "security"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Upload Image",
+      "short_name": "Upload",
+      "description": "Upload a new image to protect",
+      "url": "/?page=upload",
+      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Detect Duplicate",
+      "short_name": "Detect",
+      "description": "Scan an image for duplicates",
+      "url": "/?page=detect",
+      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+    }
+  ]
+}
