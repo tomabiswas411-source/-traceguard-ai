@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromToken } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { readFile } from 'fs/promises';
+import { readFile, unlink } from 'fs/promises';
+import { existsSync } from 'fs';
 
 export async function GET(
   request: NextRequest,
@@ -13,12 +14,20 @@ export async function GET(
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
 
     const { id } = await params;
+
+    // Validate ID format
+    if (!id || typeof id !== 'string' || id.length < 10) {
+      return NextResponse.json(
+        { error: 'Invalid image ID' },
+        { status: 400 }
+      );
+    }
 
     const image = await db.image.findFirst({
       where: {
@@ -30,6 +39,14 @@ export async function GET(
     if (!image) {
       return NextResponse.json(
         { error: 'Image not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if file exists
+    if (!existsSync(image.path)) {
+      return NextResponse.json(
+        { error: 'Image file not found on server' },
         { status: 404 }
       );
     }
@@ -48,7 +65,7 @@ export async function GET(
   } catch (error) {
     console.error('Get image error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to retrieve image' },
       { status: 500 }
     );
   }
@@ -64,12 +81,20 @@ export async function DELETE(
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
 
     const { id } = await params;
+
+    // Validate ID format
+    if (!id || typeof id !== 'string' || id.length < 10) {
+      return NextResponse.json(
+        { error: 'Invalid image ID' },
+        { status: 400 }
+      );
+    }
 
     const image = await db.image.findFirst({
       where: {
@@ -80,12 +105,22 @@ export async function DELETE(
 
     if (!image) {
       return NextResponse.json(
-        { error: 'Image not found' },
+        { error: 'Image not found or you do not have permission to delete it' },
         { status: 404 }
       );
     }
 
-    // Delete from database (file remains for now)
+    // Delete file from disk (ignore errors if file doesn't exist)
+    try {
+      if (existsSync(image.path)) {
+        await unlink(image.path);
+      }
+    } catch (fileError) {
+      console.warn('Failed to delete image file:', fileError);
+      // Continue with database deletion even if file deletion fails
+    }
+
+    // Delete from database
     await db.image.delete({
       where: { id },
     });
@@ -96,7 +131,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete image error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to delete image. Please try again.' },
       { status: 500 }
     );
   }

@@ -1,11 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateUser, createSession } from '@/lib/auth';
 
+// Email validation regex
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // Check content type
+    const contentType = request.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      return NextResponse.json(
+        { error: 'Invalid content type. Expected application/json' },
+        { status: 400 }
+      );
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
     const { email, password } = body;
 
+    // Validate required fields
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -13,8 +35,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate email format
+    if (typeof email !== 'string' || !EMAIL_REGEX.test(email)) {
+      return NextResponse.json(
+        { error: 'Please enter a valid email address' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password is a string
+    if (typeof password !== 'string') {
+      return NextResponse.json(
+        { error: 'Invalid password format' },
+        { status: 400 }
+      );
+    }
+
     // Validate user
-    const user = await validateUser(email, password);
+    const user = await validateUser(email.trim().toLowerCase(), password);
 
     if (!user) {
       return NextResponse.json(

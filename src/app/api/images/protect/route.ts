@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromToken } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, unlink } from 'fs/promises';
+import { existsSync } from 'fs';
 import { 
   simulateWatermarkEmbedding, 
   generateOwnershipCertificate 
@@ -14,17 +15,43 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Authentication required. Please log in.' },
         { status: 401 }
       );
     }
 
-    const body = await request.json();
+    // Check content type
+    const contentType = request.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      return NextResponse.json(
+        { error: 'Invalid content type. Expected application/json' },
+        { status: 400 }
+      );
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
     const { imageId } = body;
 
     if (!imageId) {
       return NextResponse.json(
         { error: 'Image ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate imageId format (cuid)
+    if (typeof imageId !== 'string' || imageId.length < 10) {
+      return NextResponse.json(
+        { error: 'Invalid image ID format' },
         { status: 400 }
       );
     }
@@ -39,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     if (!image) {
       return NextResponse.json(
-        { error: 'Image not found' },
+        { error: 'Image not found or you do not have permission to access it' },
         { status: 404 }
       );
     }
@@ -61,6 +88,14 @@ export async function POST(request: NextRequest) {
         ),
         message: 'Image already protected',
       });
+    }
+
+    // Check if file exists
+    if (!existsSync(image.path)) {
+      return NextResponse.json(
+        { error: 'Image file not found on server. Please re-upload the image.' },
+        { status: 404 }
+      );
     }
 
     // Read image file
@@ -119,7 +154,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Protection error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to protect image. Please try again.' },
       { status: 500 }
     );
   }
