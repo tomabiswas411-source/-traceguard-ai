@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { 
   Shield, Upload, Search, LogOut, User, Bell, Image as ImageIcon, 
   CheckCircle, AlertTriangle, XCircle, FileText, Download, Trash2,
   Lock, Fingerprint, Scan, Home, Menu, X, Eye, Copy,
   Plus, AlertCircle, Clock, FileCheck, ShieldCheck, Sparkles,
-  Check, CheckCheck
+  Check, CheckCheck, Zap, Rocket, Star, TrendingUp, Award
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
+import React from 'react';
 
 // Types
 interface UserType {
@@ -99,7 +100,247 @@ async function fetchWithRetry(url: string, options?: RequestInit, maxRetries = 2
   throw lastError || new Error('Request failed');
 }
 
-// Error Boundary Component
+// ===== FLOATING PARTICLES COMPONENT =====
+function FloatingParticles() {
+  const particles = useMemo(() => {
+    return Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      size: Math.random() * 4 + 2,
+      x: Math.random() * 100,
+      delay: Math.random() * 20,
+      duration: Math.random() * 20 + 15,
+      color: ['#7c3aed', '#ec4899', '#06b6d4'][Math.floor(Math.random() * 3)],
+    }));
+  }, []);
+
+  return (
+    <div className="particles-container">
+      {particles.map((particle) => (
+        <div
+          key={particle.id}
+          className="particle"
+          style={{
+            width: particle.size,
+            height: particle.size,
+            left: `${particle.x}%`,
+            background: `radial-gradient(circle, ${particle.color} 0%, transparent 70%)`,
+            animationDuration: `${particle.duration}s`,
+            animationDelay: `${particle.delay}s`,
+            boxShadow: `0 0 ${particle.size * 2}px ${particle.color}`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ===== FLOATING ORBS COMPONENT =====
+function FloatingOrbs() {
+  return (
+    <>
+      <div className="orb orb-1" />
+      <div className="orb orb-2" />
+      <div className="orb orb-3" />
+      <div className="orb orb-4" />
+    </>
+  );
+}
+
+// ===== AURORA BACKGROUND =====
+function AuroraBackground() {
+  return <div className="aurora" />;
+}
+
+// ===== ANIMATED COUNTER =====
+function AnimatedCounter({ value, duration = 2 }: { value: number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  
+  useEffect(() => {
+    let startTime: number;
+    let animationFrame: number;
+    
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / (duration * 1000), 1);
+      
+      // Easing function
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      setDisplayValue(Math.floor(easeOutQuart * value));
+      
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+    
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [value, duration]);
+  
+  return <span className="counter-value">{displayValue}</span>;
+}
+
+// ===== 3D TILT CARD =====
+function TiltCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  
+  const mouseXSpring = useSpring(x);
+  const mouseYSpring = useSpring(y);
+  
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ['10deg', '-10deg']);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ['-10deg', '10deg']);
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+  
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+  
+  return (
+    <motion.div
+      className={`card-modern rounded-2xl ${className}`}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: 'preserve-3d',
+      }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div style={{ transform: 'translateZ(50px)' }}>
+        {children}
+      </div>
+    </motion.div>
+  );
+}
+
+// ===== RIPPLE BUTTON =====
+function RippleButton({ children, className = '', ...props }: React.ComponentProps<typeof Button> & { className?: string }) {
+  const [ripples, setRipples] = useState<{ x: number; y: number; id: number }[]>([]);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  
+  const createRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const button = buttonRef.current;
+    if (!button) return;
+    
+    const rect = button.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const id = Date.now();
+    
+    setRipples(prev => [...prev, { x, y, id }]);
+    setTimeout(() => {
+      setRipples(prev => prev.filter(r => r.id !== id));
+    }, 600);
+  };
+  
+  return (
+    <Button
+      ref={buttonRef}
+      className={`ripple-container overflow-hidden ${className}`}
+      onClick={(e) => {
+        createRipple(e);
+        props.onClick?.(e);
+      }}
+      {...props}
+    >
+      {ripples.map(ripple => (
+        <span
+          key={ripple.id}
+          className="ripple"
+          style={{
+            left: ripple.x - 10,
+            top: ripple.y - 10,
+            width: 20,
+            height: 20,
+          }}
+        />
+      ))}
+      {children}
+    </Button>
+  );
+}
+
+// ===== GLOW ICON =====
+function GlowIcon({ icon: Icon, className = '' }: { icon: React.ElementType; className?: string }) {
+  return (
+    <motion.div
+      className={`relative ${className}`}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      <div className="absolute inset-0 blur-xl bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 opacity-50" />
+      <Icon className="relative z-10" />
+    </motion.div>
+  );
+}
+
+// ===== LOADING SCREEN =====
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-gradient-main pattern-grid flex items-center justify-center p-4">
+      <FloatingOrbs />
+      <FloatingParticles />
+      <AuroraBackground />
+      
+      <motion.div 
+        className="text-center relative z-10"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div 
+          className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-shield mx-auto mb-6 flex items-center justify-center animate-pulse-glow relative"
+          animate={{ 
+            boxShadow: [
+              '0 0 30px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.2)',
+              '0 0 50px rgba(124, 58, 237, 0.5), 0 0 100px rgba(124, 58, 237, 0.3)',
+              '0 0 30px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.2)',
+            ]
+          }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Shield className="w-10 h-10 sm:w-12 sm:h-12 text-white relative z-10" />
+          <motion.div
+            className="absolute inset-0 rounded-3xl"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+            style={{
+              background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.3), transparent)',
+            }}
+          />
+        </motion.div>
+        
+        <div className="loading-dots justify-center mb-4">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        
+        <motion.p 
+          className="text-muted-foreground text-sm sm:text-base"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          Initializing TraceGuard AI...
+        </motion.p>
+      </motion.div>
+    </div>
+  );
+}
+
+// ===== ERROR BOUNDARY =====
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback?: React.ReactNode },
   { hasError: boolean; error?: Error }
@@ -120,13 +361,22 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <Card className="max-w-md w-full">
+        <div className="min-h-screen bg-gradient-main pattern-grid flex items-center justify-center p-4">
+          <FloatingOrbs />
+          <Card className="max-w-md w-full glass-card">
             <CardContent className="p-6 text-center">
-              <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-              <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="w-16 h-16 rounded-full bg-red-500/20 mx-auto mb-4 flex items-center justify-center"
+              >
+                <AlertCircle className="w-8 h-8 text-red-400" />
+              </motion.div>
+              <h2 className="text-lg font-semibold mb-2 text-foreground">Something went wrong</h2>
               <p className="text-muted-foreground text-sm mb-4">An error occurred. Please refresh the page.</p>
-              <Button onClick={() => window.location.reload()}>Refresh Page</Button>
+              <RippleButton onClick={() => window.location.reload()} className="btn-gradient-primary">
+                Refresh Page
+              </RippleButton>
             </CardContent>
           </Card>
         </div>
@@ -137,10 +387,7 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-// Import React for ErrorBoundary
-import React from 'react';
-
-// Main Component
+// ===== MAIN COMPONENT =====
 export default function TraceGuardApp() {
   const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -343,9 +590,7 @@ export default function TraceGuardApp() {
     const formData = new FormData();
     formData.append('file', file);
     
-    // Clear any existing interval
     if (uploadIntervalRef.current) clearInterval(uploadIntervalRef.current);
-    
     uploadIntervalRef.current = setInterval(() => setUploadProgress(prev => Math.min(prev + 10, 90)), 200);
     
     try {
@@ -391,9 +636,7 @@ export default function TraceGuardApp() {
     const formData = new FormData();
     formData.append('file', file);
     
-    // Clear any existing interval
     if (detectIntervalRef.current) clearInterval(detectIntervalRef.current);
-    
     detectIntervalRef.current = setInterval(() => setDetectProgress(prev => Math.min(prev + 5, 90)), 100);
     
     try {
@@ -467,30 +710,22 @@ export default function TraceGuardApp() {
     setSidebarOpen(false);
   };
 
-  // Memoized values
   const unreadAlertsCount = useMemo(() => alerts.filter(a => !a.isRead).length, [alerts]);
 
-  // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-main pattern-grid flex items-center justify-center p-4">
-        <div className="text-center">
-          <motion.div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-shield mx-auto mb-4 flex items-center justify-center animate-pulse-glow">
-            <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-          </motion.div>
-          <div className="spinner mx-auto mb-3" />
-          <p className="text-muted-foreground text-sm sm:text-base">Loading TraceGuard AI...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // Auth pages
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-main pattern-grid flex flex-col">
+      <div className="min-h-screen bg-gradient-main pattern-grid flex flex-col relative">
+        <FloatingOrbs />
+        <FloatingParticles />
+        <AuroraBackground />
+        
         {/* Header */}
-        <header className="glass sticky top-0 z-50 border-b border-border/50 safe-area-top">
+        <header className="glass sticky top-0 z-50 border-b border-purple-500/20 safe-area-top">
           <div className="container-app py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <motion.div 
@@ -499,38 +734,52 @@ export default function TraceGuardApp() {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && setCurrentPage('home')}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-shield flex items-center justify-center shadow-lg">
-                  <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </div>
+                <motion.div 
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-shield flex items-center justify-center shadow-lg relative overflow-hidden"
+                  animate={{ boxShadow: ['0 0 20px rgba(124, 58, 237, 0.4)', '0 0 40px rgba(124, 58, 237, 0.6)', '0 0 20px rgba(124, 58, 237, 0.4)'] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white relative z-10" />
+                  <motion.div
+                    className="absolute inset-0"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                    style={{
+                      background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.2), transparent)',
+                    }}
+                  />
+                </motion.div>
                 <div>
-                  <h1 className="text-base sm:text-lg font-bold text-foreground">TraceGuard AI</h1>
+                  <h1 className="text-base sm:text-lg font-bold text-gradient-animate">TraceGuard AI</h1>
                   <p className="text-xs text-muted-foreground hidden sm:block">Protect Before It's Misused</p>
                 </div>
               </motion.div>
               <div className="flex items-center gap-2">
-                <Button 
+                <RippleButton 
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setCurrentPage('login')} 
-                  className="text-sm min-h-[44px] min-w-[44px] px-4"
+                  className="text-sm min-h-[44px] min-w-[44px] px-4 text-white/70 hover:text-white hover:bg-white/10"
                 >
                   Login
-                </Button>
-                <Button 
+                </RippleButton>
+                <RippleButton 
                   size="sm" 
                   onClick={() => setCurrentPage('register')} 
                   className="btn-gradient-primary text-sm min-h-[44px] min-w-[44px] px-4"
                 >
                   Get Started
-                </Button>
+                </RippleButton>
               </div>
             </div>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 container-app py-4 sm:py-8">
+        <main className="flex-1 container-app py-4 sm:py-8 relative z-10">
           <AnimatePresence mode="wait">
             {currentPage === 'home' && (
               <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
@@ -573,7 +822,7 @@ export default function TraceGuardApp() {
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-border/50 py-4 mt-auto">
+        <footer className="border-t border-purple-500/20 py-4 mt-auto relative z-10">
           <div className="container-app text-center">
             <p className="text-muted-foreground text-xs sm:text-sm">© 2024 TraceGuard AI. Protect Before It's Misused.</p>
           </div>
@@ -584,55 +833,76 @@ export default function TraceGuardApp() {
 
   // Authenticated layout
   return (
-    <div className="min-h-screen bg-gradient-main pattern-grid flex">
+    <div className="min-h-screen bg-gradient-main pattern-grid flex relative">
+      <FloatingOrbs />
+      <FloatingParticles />
+      <AuroraBackground />
+      
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-border/50 fixed h-full z-40 shadow-xl">
-        <div className="p-5 border-b border-border/50">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-shield flex items-center justify-center shadow-lg">
-              <Shield className="w-6 h-6 text-white" />
-            </div>
+      <aside className="hidden lg:flex flex-col w-72 glass-dark fixed h-full z-40 shadow-2xl sidebar-premium">
+        <div className="p-5 border-b border-purple-500/20">
+          <motion.div 
+            className="flex items-center gap-3"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <motion.div 
+              className="w-12 h-12 rounded-2xl bg-gradient-shield flex items-center justify-center shadow-lg relative overflow-hidden"
+              animate={{ boxShadow: ['0 0 20px rgba(124, 58, 237, 0.4)', '0 0 40px rgba(124, 58, 237, 0.6)', '0 0 20px rgba(124, 58, 237, 0.4)'] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Shield className="w-6 h-6 text-white relative z-10" />
+            </motion.div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">TraceGuard AI</h1>
+              <h1 className="text-lg font-bold text-gradient-animate">TraceGuard AI</h1>
               <p className="text-xs text-muted-foreground">Protect Before It's Misused</p>
             </div>
-          </div>
+          </motion.div>
         </div>
         <nav className="flex-1 p-3">
-          <ul className="space-y-1">
-            {navItems.map((item) => (
-              <li key={item.id}>
+          <ul className="space-y-2">
+            {navItems.map((item, index) => (
+              <motion.li 
+                key={item.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
                 <button 
                   onClick={() => handleNavClick(item.id)} 
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium min-h-[48px] ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium min-h-[48px] sidebar-item ${
                     activeNav === item.id 
-                      ? 'bg-gradient-shield text-white shadow-lg' 
-                      : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                      ? 'bg-gradient-to-r from-purple-600/30 to-pink-600/20 text-white border border-purple-500/30 active' 
+                      : 'text-muted-foreground hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <item.icon className="w-5 h-5" />
+                  <item.icon className={`w-5 h-5 ${activeNav === item.id ? 'text-purple-400' : ''}`} />
                   <span>{item.label}</span>
                   {item.id === 'alerts' && unreadAlertsCount > 0 && (
-                    <Badge className="ml-auto bg-white/20 text-white border-0">{unreadAlertsCount}</Badge>
+                    <Badge className="ml-auto bg-gradient-to-r from-pink-500 to-purple-500 text-white border-0 shadow-lg">{unreadAlertsCount}</Badge>
                   )}
                 </button>
-              </li>
+              </motion.li>
             ))}
           </ul>
         </nav>
-        <div className="p-3 border-t border-border/50">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 mb-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-shield flex items-center justify-center">
+        <div className="p-3 border-t border-purple-500/20">
+          <motion.div 
+            className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/20 mb-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="w-10 h-10 rounded-full bg-gradient-shield flex items-center justify-center shadow-lg">
               <User className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-foreground truncate text-sm">{user.name}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleLogout} className="w-full min-h-[44px]">
+          </motion.div>
+          <RippleButton variant="outline" size="sm" onClick={handleLogout} className="w-full min-h-[44px] border-purple-500/30 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400">
             <LogOut className="w-4 h-4 mr-2" /> Logout
-          </Button>
+          </RippleButton>
         </div>
       </aside>
 
@@ -640,29 +910,41 @@ export default function TraceGuardApp() {
       <AnimatePresence>
         {sidebarOpen && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="lg:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />
-            <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} className="lg:hidden fixed left-0 top-0 h-full w-72 bg-white z-50 flex flex-col shadow-2xl">
-              <div className="p-4 border-b border-border/50 flex items-center justify-between">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="lg:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-40" 
+              onClick={() => setSidebarOpen(false)} 
+            />
+            <motion.aside 
+              initial={{ x: -280 }} 
+              animate={{ x: 0 }} 
+              exit={{ x: -280 }} 
+              transition={{ type: 'spring', damping: 25 }}
+              className="lg:hidden fixed left-0 top-0 h-full w-72 glass-dark z-50 flex flex-col shadow-2xl"
+            >
+              <div className="p-4 border-b border-purple-500/20 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-shield flex items-center justify-center">
                     <Shield className="w-5 h-5 text-white" />
                   </div>
-                  <h1 className="font-bold text-foreground">TraceGuard AI</h1>
+                  <h1 className="font-bold text-gradient-animate">TraceGuard AI</h1>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} className="min-h-[44px] min-w-[44px]">
+                <RippleButton variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} className="min-h-[44px] min-w-[44px] text-white/70 hover:text-white">
                   <X className="w-5 h-5" />
-                </Button>
+                </RippleButton>
               </div>
               <nav className="flex-1 p-3">
-                <ul className="space-y-1">
+                <ul className="space-y-2">
                   {navItems.map((item) => (
                     <li key={item.id}>
                       <button 
                         onClick={() => handleNavClick(item.id)} 
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium touch-feedback min-h-[48px] ${
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium touch-feedback min-h-[48px] sidebar-item ${
                           activeNav === item.id 
-                            ? 'bg-gradient-shield text-white' 
-                            : 'text-muted-foreground hover:bg-secondary/50'
+                            ? 'bg-gradient-to-r from-purple-600/30 to-pink-600/20 text-white active' 
+                            : 'text-muted-foreground hover:bg-white/5'
                         }`}
                       >
                         <item.icon className="w-5 h-5" />
@@ -672,8 +954,8 @@ export default function TraceGuardApp() {
                   ))}
                 </ul>
               </nav>
-              <div className="p-3 border-t border-border/50">
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 mb-2">
+              <div className="p-3 border-t border-purple-500/20">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/20 mb-2">
                   <div className="w-9 h-9 rounded-full bg-gradient-shield flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
@@ -682,9 +964,9 @@ export default function TraceGuardApp() {
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleLogout} className="w-full min-h-[44px]">
+                <RippleButton variant="outline" size="sm" onClick={handleLogout} className="w-full min-h-[44px] border-purple-500/30 hover:bg-red-500/10">
                   <LogOut className="w-4 h-4 mr-2" /> Logout
-                </Button>
+                </RippleButton>
               </div>
             </motion.aside>
           </>
@@ -692,14 +974,14 @@ export default function TraceGuardApp() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-72 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-72 flex flex-col min-h-screen relative z-10">
         {/* Header */}
-        <header className="glass sticky top-0 z-30 border-b border-border/50 safe-area-top">
+        <header className="glass sticky top-0 z-30 border-b border-purple-500/20 safe-area-top">
           <div className="container-app flex items-center justify-between py-3">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="lg:hidden min-h-[44px] min-w-[44px]" onClick={() => setSidebarOpen(true)}>
+              <RippleButton variant="ghost" size="icon" className="lg:hidden min-h-[44px] min-w-[44px] text-white/70 hover:text-white hover:bg-white/10" onClick={() => setSidebarOpen(true)}>
                 <Menu className="w-5 h-5" />
-              </Button>
+              </RippleButton>
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-foreground">
                   {activeNav === 'dashboard' ? 'Dashboard' : activeNav === 'upload' ? 'Protect' : activeNav === 'alerts' ? 'Alerts' : 'Detect'}
@@ -709,10 +991,10 @@ export default function TraceGuardApp() {
                 </p>
               </div>
             </div>
-            <Button onClick={() => handleNavClick('upload')} className="btn-gradient-primary min-h-[44px] px-4">
+            <RippleButton onClick={() => handleNavClick('upload')} className="btn-gradient-primary min-h-[44px] px-4">
               <Plus className="w-4 h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Upload</span>
-            </Button>
+            </RippleButton>
           </div>
         </header>
 
@@ -768,76 +1050,90 @@ export default function TraceGuardApp() {
           </AnimatePresence>
         </main>
 
-        {/* Mobile Bottom Nav - Modern PWA Style */}
+        {/* Mobile Bottom Nav - Premium PWA Style */}
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
-          <div className="mx-2 mb-2">
-            <div className="glass rounded-2xl shadow-xl border border-border/50 overflow-hidden">
-              <div className="flex items-center justify-around py-2 px-1">
+          <div className="mx-3 mb-3">
+            <div className="glass rounded-2xl shadow-2xl border border-purple-500/20 overflow-hidden relative">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-cyan-600/10" />
+              <div className="relative flex items-center justify-around py-2 px-1">
                 {navItems.map((item) => {
                   const isActive = activeNav === item.id;
                   return (
-                    <button 
+                    <motion.button 
                       key={item.id} 
                       onClick={() => handleNavClick(item.id)} 
                       className={`relative flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 touch-feedback min-h-[48px] min-w-[48px] ${
                         isActive 
-                          ? 'bg-gradient-shield text-white shadow-lg scale-105' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                          ? 'bg-gradient-shield text-white shadow-lg' 
+                          : 'text-muted-foreground hover:text-white hover:bg-white/5'
                       }`}
+                      whileTap={{ scale: 0.95 }}
                     >
                       <div className="relative">
                         <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : ''}`} />
                         {item.id === 'alerts' && unreadAlertsCount > 0 && (
-                          <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] ${isActive ? 'bg-white text-primary' : 'bg-gradient-shield text-white'} text-[10px] font-bold rounded-full flex items-center justify-center px-1`}>
+                          <motion.span 
+                            className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] ${isActive ? 'bg-white text-purple-600' : 'bg-gradient-shield text-white'} text-[10px] font-bold rounded-full flex items-center justify-center px-1`}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring' }}
+                          >
                             {unreadAlertsCount}
-                          </span>
+                          </motion.span>
                         )}
                       </div>
                       <span className={`text-[10px] font-semibold ${isActive ? 'text-white' : ''}`}>{item.label}</span>
-                    </button>
+                      {isActive && (
+                        <motion.div
+                          className="absolute inset-0 rounded-xl"
+                          layoutId="activeTab"
+                          transition={{ type: 'spring', damping: 25 }}
+                        />
+                      )}
+                    </motion.button>
                   );
                 })}
-                {/* Account Button */}
-                <button 
+                <motion.button 
                   onClick={handleLogout} 
-                  className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 touch-feedback text-muted-foreground hover:text-red-500 hover:bg-red-50 min-h-[48px] min-w-[48px]"
+                  className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 touch-feedback text-muted-foreground hover:text-red-400 hover:bg-red-500/10 min-h-[48px] min-w-[48px]"
+                  whileTap={{ scale: 0.95 }}
                 >
                   <LogOut className="w-5 h-5" />
                   <span className="text-[10px] font-semibold">Logout</span>
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
-          {/* Safe area padding for iOS */}
           <div className="h-[env(safe-area-inset-bottom,0px)]" />
         </nav>
       </div>
 
       {/* Certificate Dialog */}
       <Dialog open={certificateDialog?.open} onOpenChange={(open) => !open && setCertificateDialog(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-auto mx-4">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-auto mx-4 glass-card border-purple-500/30">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <FileText className="w-5 h-5 text-primary" /> Certificate
+            <DialogTitle className="flex items-center gap-2 text-lg text-foreground">
+              <FileText className="w-5 h-5 text-purple-400" /> Certificate
             </DialogTitle>
-            <DialogDescription className="font-mono text-primary">{certificateDialog?.contentId}</DialogDescription>
+            <DialogDescription className="font-mono text-purple-400">{certificateDialog?.contentId}</DialogDescription>
           </DialogHeader>
-          <div className="bg-secondary/30 p-3 sm:p-4 rounded-xl font-mono text-[10px] sm:text-xs whitespace-pre overflow-x-auto">
+          <div className="bg-black/30 p-3 sm:p-4 rounded-xl font-mono text-[10px] sm:text-xs whitespace-pre overflow-x-auto text-green-400 border border-green-500/20">
             {certificateDialog?.certificate}
           </div>
           <div className="flex gap-2 mt-3">
-            <Button 
+            <RippleButton 
               variant="outline" 
               size="sm" 
               onClick={() => { 
                 navigator.clipboard.writeText(certificateDialog?.certificate || ''); 
                 toast({ title: 'Copied!' }); 
               }} 
-              className="flex-1 min-h-[44px]"
+              className="flex-1 min-h-[44px] border-purple-500/30 hover:bg-purple-500/10"
             >
               <Copy className="w-3 h-3 mr-1" /> Copy
-            </Button>
-            <Button 
+            </RippleButton>
+            <RippleButton 
               size="sm" 
               onClick={() => { 
                 const blob = new Blob([certificateDialog?.certificate || ''], { type: 'text/plain' }); 
@@ -846,40 +1142,40 @@ export default function TraceGuardApp() {
                 a.download = `certificate.txt`; 
                 a.click(); 
               }} 
-              className="flex-1 min-h-[44px]"
+              className="flex-1 min-h-[44px] btn-gradient-primary"
             >
               <Download className="w-3 h-3 mr-1" /> Save
-            </Button>
+            </RippleButton>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmDialog?.open} onOpenChange={(open) => !open && setDeleteConfirmDialog(null)}>
-        <DialogContent className="max-w-sm mx-4">
+        <DialogContent className="max-w-sm mx-4 glass-card border-red-500/30">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <AlertTriangle className="w-5 h-5 text-destructive" /> Delete Image
+            <DialogTitle className="flex items-center gap-2 text-lg text-foreground">
+              <AlertTriangle className="w-5 h-5 text-red-400" /> Delete Image
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-muted-foreground">
               Are you sure you want to delete &quot;{deleteConfirmDialog?.imageName}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 mt-4">
-            <Button 
+            <RippleButton 
               variant="outline" 
               onClick={() => setDeleteConfirmDialog(null)} 
-              className="flex-1 min-h-[44px]"
+              className="flex-1 min-h-[44px] border-purple-500/30 hover:bg-white/5"
             >
               Cancel
-            </Button>
-            <Button 
+            </RippleButton>
+            <RippleButton 
               variant="destructive" 
               onClick={() => deleteConfirmDialog && handleDeleteImage(deleteConfirmDialog.imageId)} 
-              className="flex-1 min-h-[44px]"
+              className="flex-1 min-h-[44px] bg-red-500 hover:bg-red-600"
             >
               Delete
-            </Button>
+            </RippleButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -887,64 +1183,177 @@ export default function TraceGuardApp() {
   );
 }
 
-// Home Page
+// ===== HOME PAGE =====
 function HomePage({ onGetStarted }: { onGetStarted: () => void }) {
   return (
-    <div className="py-6 sm:py-10">
+    <div className="py-6 sm:py-10 relative z-10">
+      {/* Hero Section */}
       <div className="text-center mb-8 sm:mb-12">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mb-4 sm:mb-6">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-shield mx-auto flex items-center justify-center shadow-xl animate-pulse-glow">
-            <ShieldCheck className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
-          </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.5 }} 
+          animate={{ opacity: 1, scale: 1 }} 
+          transition={{ type: 'spring', damping: 15 }}
+          className="mb-6 sm:mb-8"
+        >
+          <motion.div 
+            className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-gradient-shield mx-auto flex items-center justify-center shadow-2xl relative overflow-hidden"
+            animate={{ 
+              boxShadow: [
+                '0 0 30px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.2)',
+                '0 0 50px rgba(124, 58, 237, 0.5), 0 0 100px rgba(124, 58, 237, 0.3)',
+                '0 0 30px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.2)',
+              ]
+            }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <ShieldCheck className="w-12 h-12 sm:w-16 sm:h-16 text-white relative z-10" />
+            <motion.div
+              className="absolute inset-0"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+              style={{
+                background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.3), transparent)',
+              }}
+            />
+            {/* Floating particles around icon */}
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-2 h-2 rounded-full bg-white/50"
+                animate={{
+                  x: [0, Math.cos(i * 60 * Math.PI / 180) * 60],
+                  y: [0, Math.sin(i * 60 * Math.PI / 180) * 60],
+                  opacity: [0, 1, 0],
+                  scale: [0, 1, 0],
+                }}
+                transition={{
+                  duration: 2,
+                  delay: i * 0.3,
+                  repeat: Infinity,
+                }}
+              />
+            ))}
+          </motion.div>
         </motion.div>
-        <motion.h1 className="text-2xl sm:text-4xl font-bold mb-3 sm:mb-4 text-foreground px-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        
+        <motion.h1 
+          className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-foreground px-4" 
+          initial={{ opacity: 0, y: 30 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.1 }}
+        >
           Upload your Content<br />
-          <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">Before It&apos;s Misused</span>
+          <span className="text-gradient-animate">Before It&apos;s Misused</span>
         </motion.h1>
-        <motion.p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto mb-6 sm:mb-8 px-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          Protect your digital images with invisible watermarks and unique fingerprints.
+        
+        <motion.p 
+          className="text-base sm:text-lg text-muted-foreground max-w-lg mx-auto mb-6 sm:mb-8 px-4" 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.2 }}
+        >
+          Protect your digital images with invisible watermarks and unique fingerprints. 
+          Get instant alerts when your content is found elsewhere.
         </motion.p>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <Button size="lg" onClick={onGetStarted} className="btn-gradient-primary px-6 sm:px-8 min-h-[48px]">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> Start Protecting
-          </Button>
+        
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.3 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 px-4"
+        >
+          <RippleButton 
+            size="lg" 
+            onClick={onGetStarted} 
+            className="btn-gradient-primary px-8 sm:px-10 min-h-[52px] text-base font-semibold"
+          >
+            <Rocket className="w-5 h-5 mr-2" /> Start Protecting
+          </RippleButton>
+          <RippleButton 
+            size="lg" 
+            variant="outline" 
+            className="min-h-[52px] px-8 border-purple-500/30 hover:bg-purple-500/10 text-white"
+          >
+            <Zap className="w-5 h-5 mr-2" /> Watch Demo
+          </RippleButton>
         </motion.div>
       </div>
 
-      {/* Stats */}
-      <motion.div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-lg mx-auto mb-8 sm:mb-12 px-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+      {/* Stats Section */}
+      <motion.div 
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto mb-10 sm:mb-16 px-2"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
         {[
-          { value: '184', label: 'Protected', icon: Shield },
-          { value: '24', label: 'Alerts', icon: AlertTriangle },
+          { value: 184, label: 'Protected Images', icon: Shield, color: 'from-purple-500 to-pink-500' },
+          { value: 24, label: 'Alerts Triggered', icon: AlertTriangle, color: 'from-pink-500 to-red-500' },
+          { value: 99, label: 'Success Rate', icon: TrendingUp, color: 'from-cyan-500 to-blue-500', suffix: '%' },
+          { value: 5000, label: 'Happy Users', icon: Award, color: 'from-green-500 to-emerald-500' },
         ].map((stat, i) => (
-          <Card key={i} className="card-modern">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-2 text-primary" />
-              <p className="text-xl sm:text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-            </CardContent>
-          </Card>
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 + i * 0.1 }}
+          >
+            <TiltCard className="p-4 sm:p-5">
+              <CardContent className="p-0 text-center">
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${stat.color} flex items-center justify-center mx-auto mb-3 shadow-lg`}>
+                  <stat.icon className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
+                  <AnimatedCounter value={stat.value} />
+                  {stat.suffix}
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
+              </CardContent>
+            </TiltCard>
+          </motion.div>
         ))}
       </motion.div>
 
-      {/* Features */}
-      <div className="max-w-3xl mx-auto px-2">
-        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      {/* Features Section */}
+      <div className="max-w-5xl mx-auto px-2">
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">How It Works</h2>
+          <p className="text-muted-foreground">Three simple steps to protect your content</p>
+        </motion.div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
           {[
-            { icon: Upload, title: 'Upload', desc: 'Add images' },
-            { icon: Lock, title: 'Protect', desc: 'Watermark' },
-            { icon: Scan, title: 'Monitor', desc: 'Get alerts' },
+            { icon: Upload, title: 'Upload', desc: 'Add your images to our secure platform with one click', step: 1 },
+            { icon: Lock, title: 'Protect', desc: 'We embed invisible watermarks and create unique fingerprints', step: 2 },
+            { icon: Scan, title: 'Monitor', desc: 'Get instant alerts when your content is detected elsewhere', step: 3 },
           ].map((feature, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.1 }}>
-              <Card className="card-modern h-full">
-                <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-shield flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow">
-                    <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 + i * 0.15 }}
+            >
+              <TiltCard className="p-5 sm:p-6 h-full">
+                <CardContent className="p-0 text-center relative">
+                  <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-gradient-shield flex items-center justify-center text-white text-sm font-bold shadow-lg">
+                    {feature.step}
                   </div>
-                  <h4 className="font-semibold text-foreground text-sm sm:text-base">{feature.title}</h4>
-                  <p className="text-xs text-muted-foreground hidden sm:block">{feature.desc}</p>
+                  <motion.div 
+                    className="w-16 h-16 rounded-2xl bg-gradient-shield flex items-center justify-center mx-auto mb-4 shadow-lg"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <feature.icon className="w-8 h-8 text-white" />
+                  </motion.div>
+                  <h4 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h4>
+                  <p className="text-sm text-muted-foreground">{feature.desc}</p>
                 </CardContent>
-              </Card>
+              </TiltCard>
             </motion.div>
           ))}
         </div>
@@ -953,7 +1362,7 @@ function HomePage({ onGetStarted }: { onGetStarted: () => void }) {
   );
 }
 
-// Auth Form
+// ===== AUTH FORM =====
 function AuthForm({ 
   type, 
   email, 
@@ -980,86 +1389,89 @@ function AuthForm({
   errors: { email?: string; password?: string; name?: string };
 }) {
   return (
-    <Card className="card-modern mx-2 sm:mx-0">
+    <Card className="card-modern mx-2 sm:mx-0 glass-card border-purple-500/30">
       <CardHeader className="text-center pb-2 sm:pb-4">
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-shield flex items-center justify-center mx-auto mb-3 shadow-lg">
-          <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-        </div>
-        <CardTitle className="text-xl sm:text-2xl">{type === 'login' ? 'Welcome Back' : 'Create Account'}</CardTitle>
-        <CardDescription className="text-sm">{type === 'login' ? 'Sign in to continue' : 'Start protecting your content'}</CardDescription>
+        <motion.div 
+          className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-shield flex items-center justify-center mx-auto mb-4 shadow-2xl relative overflow-hidden"
+          animate={{ boxShadow: ['0 0 30px rgba(124, 58, 237, 0.4)', '0 0 50px rgba(124, 58, 237, 0.6)', '0 0 30px rgba(124, 58, 237, 0.4)'] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-white relative z-10" />
+        </motion.div>
+        <CardTitle className="text-xl sm:text-2xl text-foreground">{type === 'login' ? 'Welcome Back' : 'Create Account'}</CardTitle>
+        <CardDescription className="text-muted-foreground">{type === 'login' ? 'Sign in to continue' : 'Start protecting your content'}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
           {type === 'register' && (
-            <div>
-              <Label className="text-sm">Name</Label>
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-foreground">Name</Label>
               <Input 
+                id="name" 
                 type="text" 
-                placeholder="Your name" 
-                value={name} 
+                value={name || ''} 
                 onChange={(e) => setName?.(e.target.value)} 
-                className={`h-11 mt-1 ${errors.name ? 'border-destructive' : ''}`} 
+                placeholder="Your name" 
+                className="input-premium rounded-xl min-h-[44px] text-foreground"
               />
-              {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
+              {errors.name && <p className="text-red-400 text-xs">{errors.name}</p>}
             </div>
           )}
-          <div>
-            <Label className="text-sm">Email</Label>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-foreground">Email</Label>
             <Input 
+              id="email" 
               type="email" 
-              placeholder="you@example.com" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
-              required 
-              className={`h-11 mt-1 ${errors.email ? 'border-destructive' : ''}`} 
+              placeholder="you@example.com" 
+              className="input-premium rounded-xl min-h-[44px] text-foreground"
             />
-            {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
+            {errors.email && <p className="text-red-400 text-xs">{errors.email}</p>}
           </div>
-          <div>
-            <Label className="text-sm">Password</Label>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-foreground">Password</Label>
             <Input 
+              id="password" 
               type="password" 
-              placeholder="••••••••" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
-              required 
-              className={`h-11 mt-1 ${errors.password ? 'border-destructive' : ''}`} 
+              placeholder="••••••••" 
+              className="input-premium rounded-xl min-h-[44px] text-foreground"
             />
-            {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
-            {type === 'register' && !errors.password && (
-              <p className="text-xs text-muted-foreground mt-1">Minimum {MIN_PASSWORD_LENGTH} characters</p>
-            )}
+            {errors.password && <p className="text-red-400 text-xs">{errors.password}</p>}
           </div>
-          <Button type="submit" className="w-full h-11 btn-gradient-primary min-h-[44px]" disabled={isLoading}>
+          <RippleButton 
+            type="submit" 
+            disabled={isLoading} 
+            className="w-full btn-gradient-primary min-h-[48px] text-base font-semibold"
+          >
             {isLoading ? (
-              <div className="spinner" />
+              <div className="loading-dots"><span></span><span></span><span></span></div>
             ) : (
               <>
-                <Lock className="w-4 h-4 mr-2" />
                 {type === 'login' ? 'Sign In' : 'Create Account'}
+                <Sparkles className="w-4 h-4 ml-2" />
               </>
             )}
-          </Button>
+          </RippleButton>
         </form>
         <div className="mt-4 text-center text-sm text-muted-foreground">
-          {type === 'login' ? (
-            <>
-              Don&apos;t have an account?{' '}
-              <Button variant="link" className="p-0 h-auto text-primary" onClick={onSwitch}>Sign up</Button>
-            </>
-          ) : (
-            <>
-              Already have an account?{' '}
-              <Button variant="link" className="p-0 h-auto text-primary" onClick={onSwitch}>Sign in</Button>
-            </>
-          )}
+          {type === 'login' ? "Don't have an account? " : 'Already have an account? '}
+          <button 
+            type="button" 
+            onClick={onSwitch} 
+            className="text-purple-400 hover:text-purple-300 font-medium"
+          >
+            {type === 'login' ? 'Sign up' : 'Sign in'}
+          </button>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-// Dashboard
+// ===== DASHBOARD =====
 function Dashboard({ 
   user, 
   images, 
@@ -1075,136 +1487,175 @@ function Dashboard({
   onDeleteRequest: (id: string, name: string) => void; 
   onUpload: () => void;
 }) {
-  const protectedCount = images.filter(i => i.watermarkEmbedded).length;
+  const protectedCount = images.filter(i => i.protectedAt).length;
+  const pendingCount = images.length - protectedCount;
   const unreadAlerts = alerts.filter(a => !a.isRead).length;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Welcome */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-foreground">Hi, {user.name}! 👋</h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">Your protected content</p>
+    <div className="space-y-6">
+      {/* Welcome Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card rounded-2xl p-6 border-purple-500/20 relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-600/20 via-pink-600/10 to-transparent rounded-full blur-3xl" />
+        <div className="relative z-10">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
+            Welcome back, <span className="text-gradient-animate">{user.name.split(' ')[0]}</span>! 👋
+          </h2>
+          <p className="text-muted-foreground">
+            {protectedCount > 0 
+              ? `You have ${protectedCount} protected images. Keep your content safe!`
+              : 'Start protecting your images today.'}
+          </p>
         </div>
-        <Button onClick={onUpload} className="btn-gradient-primary min-h-[44px] px-4">
-          <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-          <span className="hidden sm:inline">Upload</span>
-        </Button>
-      </div>
+      </motion.div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { value: images.length, label: 'Images', icon: ImageIcon, color: 'bg-gradient-purple' },
-          { value: protectedCount, label: 'Protected', icon: ShieldCheck, color: 'bg-gradient-cyan' },
-          { value: alerts.length, label: 'Alerts', icon: Bell, color: 'bg-gradient-pink' },
-          { value: unreadAlerts, label: 'Unread', icon: AlertTriangle, color: 'bg-gradient-to-br from-orange-400 to-red-500' },
+          { label: 'Total Images', value: images.length, icon: ImageIcon, color: 'from-purple-500 to-pink-500' },
+          { label: 'Protected', value: protectedCount, icon: ShieldCheck, color: 'from-green-500 to-emerald-500' },
+          { label: 'Pending', value: pendingCount, icon: Clock, color: 'from-amber-500 to-orange-500' },
+          { label: 'Alerts', value: unreadAlerts, icon: Bell, color: 'from-red-500 to-pink-500' },
         ].map((stat, i) => (
-          <Card key={i} className="card-modern">
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${stat.color} flex items-center justify-center`}>
-                  <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <TiltCard className="p-4">
+              <CardContent className="p-0">
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${stat.color} flex items-center justify-center shadow-lg`}>
+                    <stat.icon className="w-5 h-5 text-white" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">
+                  <AnimatedCounter value={stat.value} />
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
+              </CardContent>
+            </TiltCard>
+          </motion.div>
         ))}
       </div>
 
-      {/* Images */}
-      <div>
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h3 className="font-semibold text-foreground">My Content</h3>
+      {/* Protected Images */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-foreground">Your Protected Content</h3>
           {images.length > 0 && (
-            <Button variant="outline" size="sm" onClick={onUpload} className="min-h-[40px] text-xs">
-              <Upload className="w-3 h-3 mr-1" /> Add
-            </Button>
+            <RippleButton size="sm" onClick={onUpload} className="btn-gradient-primary">
+              <Plus className="w-4 h-4 mr-1" /> Add More
+            </RippleButton>
           )}
         </div>
+
         {images.length === 0 ? (
-          <Card className="card-modern">
-            <CardContent className="p-6 sm:p-8 text-center">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-shield mx-auto mb-3 flex items-center justify-center">
-                <ImageIcon className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <h4 className="font-medium text-foreground mb-1">No images yet</h4>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4">Upload your first image to start protecting your content</p>
-              <Button onClick={onUpload} className="btn-gradient-primary min-h-[44px]">
-                <Upload className="w-4 h-4 mr-2" /> Upload Image
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="text-center py-12 glass-card rounded-2xl border-purple-500/20">
+            <motion.div
+              className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-4"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <ImageIcon className="w-10 h-10 text-purple-400" />
+            </motion.div>
+            <h4 className="text-lg font-medium text-foreground mb-2">No images yet</h4>
+            <p className="text-muted-foreground mb-4">Start protecting your content today</p>
+            <RippleButton onClick={onUpload} className="btn-gradient-primary">
+              <Upload className="w-4 h-4 mr-2" /> Upload First Image
+            </RippleButton>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {images.map((image) => (
-              <Card key={image.id} className="card-modern overflow-hidden">
-                <div className="aspect-square sm:aspect-video bg-secondary/30 relative">
-                  <img src={`/api/images/${image.id}`} alt={image.originalName} className="w-full h-full object-cover" />
-                  {image.watermarkEmbedded && (
-                    <Badge className="absolute top-2 right-2 badge-success text-[10px] px-1.5 py-0">
-                      <CheckCircle className="w-2.5 h-2.5 mr-0.5" /> Protected
-                    </Badge>
-                  )}
-                </div>
-                <CardContent className="p-2 sm:p-3">
-                  <p className="font-medium text-foreground truncate text-xs sm:text-sm">{image.originalName}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">{formatFileSize(image.size)} • {formatDate(image.createdAt)}</p>
-                  <div className="flex gap-1.5 mt-2">
-                    {!image.watermarkEmbedded && (
-                      <Button size="sm" onClick={() => onProtect(image.id)} className="flex-1 min-h-[36px] text-[10px] btn-gradient-primary">
-                        <Shield className="w-2.5 h-2.5 mr-0.5" /> Protect
-                      </Button>
-                    )}
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => onDeleteRequest(image.id, image.originalName)} 
-                      className="min-h-[36px] min-w-[36px] p-0"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {images.map((image, i) => (
+              <motion.div
+                key={image.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <TiltCard className="p-4">
+                  <CardContent className="p-0">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${image.protectedAt ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-amber-500 to-orange-500'}`}>
+                          {image.protectedAt ? <ShieldCheck className="w-5 h-5 text-white" /> : <Clock className="w-5 h-5 text-white" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate text-sm">{image.originalName}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(image.size)}</p>
+                        </div>
+                      </div>
+                      <Badge className={image.protectedAt ? 'badge-success' : 'badge-warning'}>
+                        {image.protectedAt ? 'Protected' : 'Pending'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                      <CalendarIcon className="w-3 h-3" />
+                      {formatDate(image.createdAt)}
+                    </div>
+
+                    <div className="flex gap-2">
+                      {!image.protectedAt && (
+                        <RippleButton 
+                          size="sm" 
+                          onClick={() => onProtect(image.id)} 
+                          className="flex-1 btn-gradient-primary text-xs"
+                        >
+                          <Shield className="w-3 h-3 mr-1" /> Protect
+                        </RippleButton>
+                      )}
+                      {image.protectedAt && (
+                        <RippleButton 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 text-xs border-green-500/30 text-green-400 hover:bg-green-500/10"
+                        >
+                          <FileCheck className="w-3 h-3 mr-1" /> View Cert
+                        </RippleButton>
+                      )}
+                      <RippleButton 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => onDeleteRequest(image.id, image.originalName)} 
+                        className="text-xs border-red-500/30 text-red-400 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </RippleButton>
+                    </div>
+                  </CardContent>
+                </TiltCard>
+              </motion.div>
             ))}
           </div>
         )}
-      </div>
-
-      {/* Recent Alerts */}
-      {alerts.length > 0 && (
-        <div>
-          <h3 className="font-semibold text-foreground mb-3">Recent Alerts</h3>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {alerts.slice(0, 3).map((alert) => (
-              <Card key={alert.id} className={`card-modern ${alert.severity === 'warning' ? 'border-l-4 border-l-amber-500' : alert.severity === 'error' ? 'border-l-4 border-l-red-500' : alert.severity === 'success' ? 'border-l-4 border-l-emerald-500' : ''}`}>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${alert.severity === 'warning' ? 'bg-amber-100' : alert.severity === 'error' ? 'bg-red-100' : alert.severity === 'success' ? 'bg-emerald-100' : 'bg-blue-100'}`}>
-                      {alert.severity === 'warning' ? <AlertTriangle className="w-4 h-4 text-amber-600" /> : alert.severity === 'error' ? <XCircle className="w-4 h-4 text-red-600" /> : alert.severity === 'success' ? <CheckCircle className="w-4 h-4 text-emerald-600" /> : <Bell className="w-4 h-4 text-blue-600" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground text-sm truncate">{alert.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{alert.message}</p>
-                    </div>
-                    {!alert.isRead && <Badge className="badge-gradient text-[10px]">New</Badge>}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+      </motion.div>
     </div>
   );
 }
 
-// Upload Page
+// Simple calendar icon
+function CalendarIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+      <line x1="16" y1="2" x2="16" y2="6"></line>
+      <line x1="8" y1="2" x2="8" y2="6"></line>
+      <line x1="3" y1="10" x2="21" y2="10"></line>
+    </svg>
+  );
+}
+
+// ===== UPLOAD PAGE =====
 function UploadPage({ 
   file, 
   setFile, 
@@ -1224,187 +1675,190 @@ function UploadPage({
   setIsDragging: (v: boolean) => void; 
   onProtect: (id: string) => void;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile?.type.startsWith('image/')) setFile(droppedFile);
+    if (droppedFile && droppedFile.type.startsWith('image/')) {
+      setFile(droppedFile);
+    }
   }, [setFile, setIsDragging]);
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, [setIsDragging]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, [setIsDragging]);
+
   return (
-    <Card className="card-modern">
-      <CardHeader className="text-center pb-2 sm:pb-4">
-        {result?.success ? (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-shield mx-auto mb-3 flex items-center justify-center shadow-xl">
-            <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-          </motion.div>
-        ) : (
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-shield flex items-center justify-center mx-auto mb-3 shadow-lg">
-            <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-          </div>
-        )}
-        <CardTitle className="text-lg sm:text-xl">{result?.success ? 'Protected!' : 'Upload Image'}</CardTitle>
-        <CardDescription className="text-sm">{result?.success ? 'Your content is protected' : 'Add watermark and fingerprint'}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {!result ? (
-          <>
-            <div 
-              className={`border-2 border-dashed rounded-xl p-6 sm:p-8 text-center transition-all ${isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} 
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} 
-              onDragLeave={() => setIsDragging(false)} 
+    <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <Card className="card-modern glass-card border-purple-500/20">
+          <CardHeader>
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Upload className="w-5 h-5 text-purple-400" /> Upload Image
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Drop your image or click to browse
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Drop Zone */}
+            <motion.div
+              className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+                isDragging 
+                  ? 'border-purple-500 bg-purple-500/10' 
+                  : 'border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/5'
+              }`}
               onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              whileHover={{ scale: 1.01 }}
             >
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])} className="hidden" />
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-shield flex items-center justify-center mx-auto mb-3 shadow">
-                <Upload className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-              <p className="font-medium text-foreground text-sm sm:text-base mb-1">{file ? file.name : 'Tap to select image'}</p>
-              <p className="text-xs text-muted-foreground mb-3">{file ? formatFileSize(file.size) : 'JPG, PNG, WebP (max 10MB)'}</p>
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="min-h-[44px]">Browse</Button>
-            </div>
-            {file && (
-              <div className="flex items-center justify-between p-3 sm:p-4 bg-secondary/30 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white flex items-center justify-center shadow">
-                    <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              
+              {!file ? (
+                <div className="space-y-4">
+                  <motion.div
+                    className="w-16 h-16 rounded-2xl bg-gradient-shield flex items-center justify-center mx-auto shadow-lg"
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Upload className="w-8 h-8 text-white" />
+                  </motion.div>
+                  <div>
+                    <p className="text-foreground font-medium">Drop your image here</p>
+                    <p className="text-sm text-muted-foreground">or click to browse</p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground text-sm truncate max-w-[120px] sm:max-w-none">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
+                      <ImageIcon className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium text-foreground">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                    </div>
                   </div>
                 </div>
-                <Button onClick={() => onUpload(file)} disabled={progress > 0 && progress < 100} className="btn-gradient-primary min-h-[44px]">
-                  {progress > 0 && progress < 100 ? <div className="spinner" /> : <><Upload className="w-4 h-4 mr-1" /> Upload</>}
-                </Button>
-              </div>
-            )}
-            {progress > 0 && progress < 100 && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Processing...</span>
-                  <span className="text-primary font-medium">{progress}%</span>
-                </div>
-                <Progress value={progress} className="h-1.5" />
-              </div>
-            )}
-          </>
-        ) : (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-            {[
-              { icon: FileCheck, text: 'File Uploaded' },
-              { icon: Fingerprint, text: 'Fingerprint Generated' },
-              { icon: Lock, text: 'Ready for Protection' },
-            ].map((item, i) => (
-              <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
-                  <item.icon className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-medium text-emerald-700">{item.text}</span>
+              )}
+            </motion.div>
+
+            {/* Upload Button */}
+            {file && !result && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-4"
+              >
+                <RippleButton 
+                  onClick={() => onUpload(file)} 
+                  className="w-full btn-gradient-primary min-h-[48px]"
+                  disabled={progress > 0 && progress < 100}
+                >
+                  {progress > 0 && progress < 100 ? (
+                    <div className="flex items-center gap-2">
+                      <div className="spinner" />
+                      Uploading...
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" /> Upload & Protect
+                    </>
+                  )}
+                </RippleButton>
               </motion.div>
-            ))}
-            {result.image && (
-              <div className="p-3 bg-secondary/30 rounded-xl">
-                <p className="text-xs text-muted-foreground mb-1">Content ID</p>
-                <p className="font-mono text-primary font-medium text-sm">{result.image.contentId}</p>
-              </div>
             )}
-            {result.image && !result.image.watermarkEmbedded && (
-              <Button onClick={() => onProtect(result.image!.id)} className="w-full btn-gradient-primary min-h-[44px]">
-                <Shield className="w-4 h-4 mr-2" /> Protect Content
-              </Button>
+
+            {/* Progress Bar */}
+            {progress > 0 && progress < 100 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-4 space-y-2"
+              >
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Uploading...</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="progress-premium h-2">
+                  <motion.div 
+                    className="progress-premium-bar"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                  />
+                </div>
+              </motion.div>
             )}
-            <Button variant="outline" onClick={() => { setFile(null); setUploadResult(null); }} className="w-full min-h-[44px]">
-              Upload Another
-            </Button>
-          </motion.div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
-// Alerts Page
-function AlertsPage({ 
-  alerts, 
-  onMarkRead, 
-  onMarkAllRead 
-}: { 
-  alerts: AlertType[]; 
-  onMarkRead: (id: string) => void; 
-  onMarkAllRead: () => void;
-}) {
-  const unreadCount = alerts.filter(a => !a.isRead).length;
+            {/* Result */}
+            {result && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`mt-4 p-4 rounded-xl ${
+                  result.success 
+                    ? 'bg-green-500/10 border border-green-500/30' 
+                    : 'bg-red-500/10 border border-red-500/30'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {result.success ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring' }}
+                      className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center"
+                    >
+                      <Check className="w-5 h-5 text-white" />
+                    </motion.div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center">
+                      <XCircle className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                  <div>
+                    <p className={`font-medium ${result.success ? 'text-green-400' : 'text-red-400'}`}>
+                      {result.success ? 'Success!' : 'Error'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{result.message}</p>
+                  </div>
+                </div>
 
-  return (
-    <div className="space-y-3">
-      {alerts.length === 0 ? (
-        <Card className="card-modern">
-          <CardContent className="p-6 sm:p-8 text-center">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-cyan mx-auto mb-3 flex items-center justify-center">
-              <CheckCircle className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-            </div>
-            <h4 className="font-medium text-foreground mb-1">All Clear!</h4>
-            <p className="text-xs sm:text-sm text-muted-foreground">No alerts to show. You&apos;re all caught up!</p>
+                {result.success && result.image && !result.image.protectedAt && (
+                  <div className="mt-4">
+                    <RippleButton 
+                      onClick={() => onProtect(result.image!.id)} 
+                      className="w-full btn-gradient-primary"
+                    >
+                      <Shield className="w-4 h-4 mr-2" /> Protect Now
+                    </RippleButton>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </CardContent>
         </Card>
-      ) : (
-        <>
-          {unreadCount > 0 && (
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm" onClick={onMarkAllRead} className="min-h-[40px] text-xs">
-                <CheckCheck className="w-3 h-3 mr-1" /> Mark all as read
-              </Button>
-            </div>
-          )}
-          <div className="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
-            {alerts.map((alert) => (
-              <Card 
-                key={alert.id} 
-                className={`card-modern ${alert.severity === 'warning' ? 'border-l-4 border-l-amber-500' : alert.severity === 'error' ? 'border-l-4 border-l-red-500' : alert.severity === 'success' ? 'border-l-4 border-l-emerald-500' : ''} ${!alert.isRead ? 'bg-primary/5' : ''}`}
-              >
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center ${alert.severity === 'warning' ? 'bg-amber-100' : alert.severity === 'error' ? 'bg-red-100' : alert.severity === 'success' ? 'bg-emerald-100' : 'bg-blue-100'}`}>
-                      {alert.severity === 'warning' ? <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" /> : alert.severity === 'error' ? <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" /> : alert.severity === 'success' ? <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" /> : <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium text-foreground text-sm sm:text-base">{alert.title}</p>
-                        <div className="flex items-center gap-1">
-                          {!alert.isRead && <Badge className="badge-gradient text-[10px]">New</Badge>}
-                          {!alert.isRead && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => onMarkRead(alert.id)} 
-                              className="min-h-[36px] min-w-[36px] p-0"
-                              title="Mark as read"
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{alert.message}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {formatDate(alert.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </>
-      )}
+      </motion.div>
     </div>
   );
 }
 
-// Detect Page
+// ===== DETECT PAGE =====
 function DetectPage({ 
   file, 
   setFile, 
@@ -1418,105 +1872,299 @@ function DetectPage({
   result: { isMatchFound: boolean; matches: MatchType[]; totalScanned: number; message: string } | null; 
   onDetect: (f: File) => void;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile && droppedFile.type.startsWith('image/')) {
+      setFile(droppedFile);
+    }
+  }, [setFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
 
   return (
-    <Card className="card-modern">
-      <CardHeader className="text-center pb-2 sm:pb-4">
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-cyan flex items-center justify-center mx-auto mb-3 shadow-lg">
-          <Search className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-        </div>
-        <CardTitle className="text-lg sm:text-xl">Detect Duplicates</CardTitle>
-        <CardDescription className="text-sm">Scan for matching images</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {!result ? (
-          <>
-            <div className="border-2 border-dashed border-border hover:border-primary/50 rounded-xl p-6 sm:p-8 text-center transition-all">
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])} className="hidden" />
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-cyan flex items-center justify-center mx-auto mb-3 shadow">
-                <Scan className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-              <p className="font-medium text-foreground text-sm sm:text-base mb-1">{file ? file.name : 'Select image to scan'}</p>
-              <p className="text-xs text-muted-foreground mb-3">Compare against protected images</p>
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="min-h-[44px]">Browse</Button>
-            </div>
-            {file && (
-              <div className="flex items-center justify-between p-3 sm:p-4 bg-secondary/30 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white flex items-center justify-center shadow">
-                    <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground text-sm truncate max-w-[120px] sm:max-w-none">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+    <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <Card className="card-modern glass-card border-purple-500/20">
+          <CardHeader>
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Search className="w-5 h-5 text-purple-400" /> Detect Duplicates
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Check if an image exists in our protected database
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Drop Zone */}
+            <motion.div
+              className="relative border-2 border-dashed border-purple-500/30 hover:border-purple-500/50 rounded-2xl p-8 text-center transition-all hover:bg-purple-500/5"
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              whileHover={{ scale: 1.01 }}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              
+              {!file ? (
+                <div className="space-y-4">
+                  <motion.div
+                    className="w-16 h-16 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center mx-auto shadow-lg"
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Search className="w-8 h-8 text-white" />
+                  </motion.div>
+                  <div>
+                    <p className="text-foreground font-medium">Drop image to scan</p>
+                    <p className="text-sm text-muted-foreground">or click to browse</p>
                   </div>
                 </div>
-                <Button onClick={() => onDetect(file)} disabled={progress > 0 && progress < 100} className="btn-gradient-secondary min-h-[44px]">
-                  {progress > 0 && progress < 100 ? <div className="spinner" /> : <><Search className="w-4 h-4 mr-1" /> Scan</>}
-                </Button>
-              </div>
-            )}
-            {progress > 0 && progress < 100 && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Scanning...</span>
-                  <span className="text-primary font-medium">{progress}%</span>
-                </div>
-                <Progress value={progress} className="h-1.5" />
-              </div>
-            )}
-          </>
-        ) : (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-            <div className={`p-4 rounded-xl ${result.isMatchFound ? 'bg-red-50' : 'bg-emerald-50'}`}>
-              <div className="flex items-center gap-3">
-                {result.isMatchFound ? (
-                  <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
-                    <AlertTriangle className="w-5 h-5 text-white" />
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  </div>
-                )}
-                <div>
-                  <p className={`font-medium text-sm ${result.isMatchFound ? 'text-red-700' : 'text-emerald-700'}`}>{result.message}</p>
-                  <p className="text-xs text-muted-foreground">Scanned {result.totalScanned} images</p>
-                </div>
-              </div>
-            </div>
-            {result.isMatchFound && result.matches.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Matches found:</p>
-                {result.matches.slice(0, 3).map((match, i) => (
-                  <div key={i} className="p-3 bg-secondary/30 rounded-xl">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-medium text-foreground text-sm">{match.originalName}</p>
-                        <p className="text-xs text-muted-foreground">Owner: {match.owner}</p>
-                      </div>
-                      <Badge className={match.isExactMatch ? 'badge-error text-[10px]' : 'badge-warning text-[10px]'}>
-                        {match.isExactMatch ? 'Exact' : `${Math.round(match.similarity * 100)}%`}
-                      </Badge>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
+                      <ImageIcon className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium text-foreground">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Scan Button */}
+            {file && !result && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-4"
+              >
+                <RippleButton 
+                  onClick={() => onDetect(file)} 
+                  className="w-full btn-gradient-secondary min-h-[48px]"
+                  disabled={progress > 0 && progress < 100}
+                >
+                  {progress > 0 && progress < 100 ? (
+                    <div className="flex items-center gap-2">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      >
+                        <Search className="w-4 h-4" />
+                      </motion.div>
+                      Scanning...
+                    </div>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 mr-2" /> Start Scan
+                    </>
+                  )}
+                </RippleButton>
+              </motion.div>
             )}
-            <Button variant="outline" onClick={() => { setFile(null); setDetectResult(null); }} className="w-full min-h-[44px]">
-              Scan Another
-            </Button>
-          </motion.div>
-        )}
-      </CardContent>
-    </Card>
+
+            {/* Progress */}
+            {progress > 0 && progress < 100 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-4 space-y-2"
+              >
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Scanning database...</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="progress-premium h-2">
+                  <motion.div 
+                    className="progress-premium-bar"
+                    style={{ background: 'linear-gradient(90deg, #06b6d4, #3b82f6)' }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Result */}
+            {result && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`mt-4 p-4 rounded-xl ${
+                  result.isMatchFound 
+                    ? 'bg-amber-500/10 border border-amber-500/30' 
+                    : 'bg-green-500/10 border border-green-500/30'
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  {result.isMatchFound ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring' }}
+                      className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center"
+                    >
+                      <AlertTriangle className="w-5 h-5 text-white" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring' }}
+                      className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center"
+                    >
+                      <Check className="w-5 h-5 text-white" />
+                    </motion.div>
+                  )}
+                  <div>
+                    <p className={`font-medium ${result.isMatchFound ? 'text-amber-400' : 'text-green-400'}`}>
+                      {result.isMatchFound ? 'Match Found!' : 'No Matches'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{result.message}</p>
+                  </div>
+                </div>
+
+                {result.matches.length > 0 && (
+                  <div className="space-y-2">
+                    {result.matches.map((match, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-black/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <Fingerprint className="w-5 h-5 text-purple-400" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{match.originalName}</p>
+                            <p className="text-xs text-muted-foreground">Similarity: {match.similarity}%</p>
+                          </div>
+                        </div>
+                        <Badge className={match.isExactMatch ? 'badge-error' : 'badge-warning'}>
+                          {match.isExactMatch ? 'Exact' : 'Similar'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
   );
 }
 
-// Need to add setUploadResult and setDetectResult to the window for the UploadPage and DetectPage
-// This is a workaround since we're passing setFile but not setUploadResult/setDetectResult
-declare global {
-  function setUploadResult(result: { success: boolean; message: string; image?: ImageType; isDuplicate?: boolean } | null): void;
-  function setDetectResult(result: { isMatchFound: boolean; matches: MatchType[]; totalScanned: number; message: string } | null): void;
+// ===== ALERTS PAGE =====
+function AlertsPage({ 
+  alerts, 
+  onMarkRead, 
+  onMarkAllRead 
+}: { 
+  alerts: AlertType[]; 
+  onMarkRead: (id: string) => void; 
+  onMarkAllRead: () => void;
+}) {
+  const unreadCount = alerts.filter(a => !a.isRead).length;
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
+          <p className="text-sm text-muted-foreground">
+            {unreadCount > 0 ? `${unreadCount} unread alerts` : 'All caught up!'}
+          </p>
+        </div>
+        {unreadCount > 0 && (
+          <RippleButton 
+            size="sm" 
+            variant="outline" 
+            onClick={onMarkAllRead}
+            className="border-purple-500/30 hover:bg-purple-500/10"
+          >
+            <CheckCheck className="w-4 h-4 mr-1" /> Mark All Read
+          </RippleButton>
+        )}
+      </motion.div>
+
+      {/* Alerts List */}
+      {alerts.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-12 glass-card rounded-2xl border-purple-500/20"
+        >
+          <motion.div
+            className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-4"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Bell className="w-10 h-10 text-purple-400" />
+          </motion.div>
+          <h4 className="text-lg font-medium text-foreground mb-2">No alerts yet</h4>
+          <p className="text-muted-foreground">We'll notify you when we find matches</p>
+        </motion.div>
+      ) : (
+        <div className="space-y-3">
+          {alerts.map((alert, i) => (
+            <motion.div
+              key={alert.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <TiltCard className={`p-4 ${!alert.isRead ? 'border-purple-500/40' : ''}`}>
+                <CardContent className="p-0">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      alert.severity === 'high' ? 'bg-gradient-to-r from-red-500 to-pink-500' :
+                      alert.severity === 'medium' ? 'bg-gradient-to-r from-amber-500 to-orange-500' :
+                      'bg-gradient-to-r from-cyan-500 to-blue-500'
+                    }`}>
+                      {alert.severity === 'high' ? <XCircle className="w-5 h-5 text-white" /> :
+                       alert.severity === 'medium' ? <AlertTriangle className="w-5 h-5 text-white" /> :
+                       <Bell className="w-5 h-5 text-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-foreground">{alert.title}</p>
+                        {!alert.isRead && (
+                          <span className="w-2 h-2 rounded-full bg-purple-500" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{alert.message}</p>
+                      <p className="text-xs text-muted-foreground mt-2">{formatDate(alert.createdAt)}</p>
+                    </div>
+                    {!alert.isRead && (
+                      <RippleButton 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => onMarkRead(alert.id)}
+                        className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                      >
+                        <Check className="w-4 h-4" />
+                      </RippleButton>
+                    )}
+                  </div>
+                </CardContent>
+              </TiltCard>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
