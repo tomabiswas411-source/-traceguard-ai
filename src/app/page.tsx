@@ -18,6 +18,7 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import React from 'react';
+import { useFirebase, analyticsEvents } from '@/components/FirebaseProvider';
 
 // Types
 interface UserType {
@@ -375,6 +376,9 @@ class ErrorBoundary extends React.Component<
 
 // ===== MAIN COMPONENT =====
 export default function TraceGuardApp() {
+  // Firebase Analytics
+  const { isReady: firebaseReady } = useFirebase();
+  
   const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'upload' | 'detect' | 'alerts'>('home');
@@ -519,6 +523,9 @@ export default function TraceGuardApp() {
         setActiveNav('dashboard');
         toast({ title: 'Welcome back!', description: data.message });
         setFormErrors({});
+        // Firebase Analytics - Track login
+        analyticsEvents.login('email');
+        analyticsEvents.pageView('dashboard');
       } else { 
         toast({ title: 'Error', description: data.error, variant: 'destructive' }); 
       }
@@ -547,6 +554,9 @@ export default function TraceGuardApp() {
         setActiveNav('dashboard');
         toast({ title: 'Welcome!', description: data.message });
         setFormErrors({});
+        // Firebase Analytics - Track registration
+        analyticsEvents.register('email');
+        analyticsEvents.pageView('dashboard');
       } else { 
         toast({ title: 'Error', description: data.error, variant: 'destructive' }); 
       }
@@ -559,6 +569,8 @@ export default function TraceGuardApp() {
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
+      // Firebase Analytics - Track logout
+      analyticsEvents.logout();
       setUser(null);
       setCurrentPage('home');
       setImages([]);
@@ -575,6 +587,9 @@ export default function TraceGuardApp() {
     setUploadResult(null);
     const formData = new FormData();
     formData.append('file', file);
+    
+    // Firebase Analytics - Track image upload start
+    analyticsEvents.imageUpload(file.size, file.type);
     
     if (uploadIntervalRef.current) clearInterval(uploadIntervalRef.current);
     uploadIntervalRef.current = setInterval(() => setUploadProgress(prev => Math.min(prev + 10, 90)), 200);
@@ -608,6 +623,8 @@ export default function TraceGuardApp() {
       });
       const data = await response.json();
       if (response.ok) {
+        // Firebase Analytics - Track image protection
+        analyticsEvents.imageProtect(imageId);
         fetchImages();
         fetchAlerts();
         setCertificateDialog({ open: true, certificate: data.certificate, contentId: data.image.contentId });
@@ -633,6 +650,8 @@ export default function TraceGuardApp() {
       setDetectProgress(100);
       
       if (response.ok) { 
+        // Firebase Analytics - Track detection
+        analyticsEvents.imageDetect(data.isMatchFound || false);
         setDetectResult(data); 
         fetchAlerts(); 
       }
