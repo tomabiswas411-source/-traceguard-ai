@@ -102,8 +102,19 @@ async function fetchWithRetry(url: string, options?: RequestInit, maxRetries = 2
 
 // ===== FLOATING PARTICLES COMPONENT =====
 function FloatingParticles() {
-  const particles = useMemo(() => {
-    return Array.from({ length: 30 }, (_, i) => ({
+  const [particles, setParticles] = useState<Array<{
+    id: number;
+    size: number;
+    x: number;
+    delay: number;
+    duration: number;
+    color: string;
+  }>>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // Generate particles only on client side to avoid hydration mismatch
+    const generatedParticles = Array.from({ length: 30 }, (_, i) => ({
       id: i,
       size: Math.random() * 4 + 2,
       x: Math.random() * 100,
@@ -111,7 +122,11 @@ function FloatingParticles() {
       duration: Math.random() * 20 + 15,
       color: ['#7c3aed', '#ec4899', '#06b6d4'][Math.floor(Math.random() * 3)],
     }));
+    setParticles(generatedParticles);
+    setMounted(true);
   }, []);
+
+  if (!mounted) return null;
 
   return (
     <div className="particles-container">
