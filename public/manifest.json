@@ -4,21 +4,35 @@
   "description": "AI-powered platform that protects digital images with invisible watermarks and fingerprints",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a1a2e",
-  "theme_color": "#7c3aed",
   "orientation": "portrait-primary",
+  "background_color": "#fafbff",
+  "theme_color": "#7c3aed",
+  "scope": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/logo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["productivity", "utilities", "security"],
@@ -28,15 +42,18 @@
       "name": "Upload Image",
       "short_name": "Upload",
       "description": "Upload a new image to protect",
-      "url": "/?page=upload",
+      "url": "/",
       "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
     },
     {
-      "name": "Detect Duplicate",
+      "name": "Detect Duplicates",
       "short_name": "Detect",
       "description": "Scan an image for duplicates",
-      "url": "/?page=detect",
+      "url": "/",
       "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
     }
-  ]
+  ],
+  "related_applications": [],
+  "lang": "en",
+  "dir": "ltr"
 }
