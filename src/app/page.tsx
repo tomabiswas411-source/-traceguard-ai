@@ -460,12 +460,18 @@ export default function TraceGuardApp() {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
-        setCurrentPage('dashboard');
       }
     } catch {
-      // Auth check failed, user not logged in
-    } finally { 
-      setIsLoading(false); 
+      // Auto-login as guest user - no authentication required
+      setUser({
+        id: 'guest-user',
+        email: 'guest@traceguard.ai',
+        name: 'Guest User',
+        createdAt: new Date().toISOString()
+      });
+    } finally {
+      setIsLoading(false);
+      setCurrentPage('dashboard');
     }
   };
 
@@ -913,7 +919,7 @@ export default function TraceGuardApp() {
         </nav>
         <div className="p-3 border-t border-purple-500/20">
           <motion.div 
-            className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/20 mb-2"
+            className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -925,9 +931,6 @@ export default function TraceGuardApp() {
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
           </motion.div>
-          <RippleButton variant="outline" size="sm" onClick={handleLogout} className="w-full min-h-[44px] border-purple-500/30 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400">
-            <LogOut className="w-4 h-4 mr-2" /> Logout
-          </RippleButton>
         </div>
       </aside>
 
@@ -980,7 +983,7 @@ export default function TraceGuardApp() {
                 </ul>
               </nav>
               <div className="p-3 border-t border-purple-500/20">
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/20 mb-2">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/20">
                   <div className="w-9 h-9 rounded-full bg-gradient-shield flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
@@ -989,9 +992,6 @@ export default function TraceGuardApp() {
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   </div>
                 </div>
-                <RippleButton variant="outline" size="sm" onClick={handleLogout} className="w-full min-h-[44px] border-purple-500/30 hover:bg-red-500/10">
-                  <LogOut className="w-4 h-4 mr-2" /> Logout
-                </RippleButton>
               </div>
             </motion.aside>
           </>
@@ -1124,14 +1124,6 @@ export default function TraceGuardApp() {
                     </motion.button>
                   );
                 })}
-                <motion.button 
-                  onClick={handleLogout} 
-                  className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 touch-feedback text-muted-foreground hover:text-red-400 hover:bg-red-500/10 min-h-[48px] min-w-[48px]"
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <LogOut className="w-5 h-5" />
-                  <span className="text-[10px] font-semibold">Logout</span>
-                </motion.button>
               </div>
             </div>
           </div>
