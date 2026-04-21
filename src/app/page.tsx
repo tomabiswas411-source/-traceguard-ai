@@ -460,6 +460,16 @@ export default function TraceGuardApp() {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        setCurrentPage('dashboard');
+      } else {
+        // Auto-login as guest user - no authentication required
+        setUser({
+          id: 'guest-user',
+          email: 'guest@traceguard.ai',
+          name: 'Guest User',
+          createdAt: new Date().toISOString()
+        });
+        setCurrentPage('dashboard');
       }
     } catch {
       // Auto-login as guest user - no authentication required
@@ -469,9 +479,9 @@ export default function TraceGuardApp() {
         name: 'Guest User',
         createdAt: new Date().toISOString()
       });
+      setCurrentPage('dashboard');
     } finally {
       setIsLoading(false);
-      setCurrentPage('dashboard');
     }
   };
 
