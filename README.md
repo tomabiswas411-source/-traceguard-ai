@@ -1,160 +1,141 @@
-# TraceGuard AI - Image Protection Platform
+# TraceGuard AI
 
-An AI-powered platform that protects digital images before misuse by embedding invisible watermark data and generating unique fingerprints, then detects duplicate or reused images and alerts the user.
+AI-powered image protection platform that helps you protect your digital content with invisible watermarks and fingerprinting technology.
+
+![TraceGuard AI](./public/logo.png)
 
 ## Features
 
-### Core Features
-- **User Authentication System**: Sign up, Login, Logout with secure session management
-- **Image Upload & Protection**: Upload images (JPG/PNG/WebP) and protect with invisible watermarks
-- **Content Fingerprinting**: Generate unique hash for each image using perceptual-like hashing
-- **Detection System**: Compare images against database to detect duplicates
-- **User Dashboard**: View uploaded images, protection status, and fingerprints
-- **Alert & Notification System**: Real-time alerts for detected duplicates
-
-### Extra Features
-- **Content ID**: Unique identifier for each protected image
-- **Ownership Certificate**: Generated certificate for protected content
-- **Loading Animations**: Smooth progress indicators during processing
-- **PWA Support**: Progressive Web App with mobile responsiveness
+- **AI-Powered Watermarking** - Embed invisible watermarks in your images
+- **Fingerprinting Technology** - Unique content identification for tracking
+- **Duplicate Detection** - Automatically detect unauthorized copies
+- **Real-time Alerts** - Get notified when your content is found elsewhere
+- **Dashboard Analytics** - Track protection status and detections
+- **Progressive Web App** - Install on any device for quick access
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4
-- **UI Components**: shadcn/ui (New York style)
-- **Animations**: Framer Motion
-- **Backend**: Next.js API Routes
-- **Database**: Prisma ORM with SQLite
-- **Authentication**: Custom session-based auth with secure cookies
+- **UI Components**: shadcn/ui, Radix UI, Framer Motion
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Database**: SQLite (development) / PostgreSQL (production)
+- **Authentication**: NextAuth.js
+- **Analytics**: Firebase Analytics, Firestore
+- **Storage**: Firebase Storage
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ or Bun
+- npm, yarn, or bun
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/YOUR_USERNAME/traceguard-ai.git
+cd traceguard-ai
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+bun install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+```
+
+4. Update `.env` with your credentials:
+```env
+DATABASE_URL="file:./dev.db"
+
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY="your-api-key"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="your-project-id"
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your-project.appspot.com"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
+NEXT_PUBLIC_FIREBASE_APP_ID="your-app-id"
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="your-measurement-id"
+
+# NextAuth.js
+NEXTAUTH_SECRET="your-nextauth-secret-here"
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+5. Initialize the database:
+```bash
+npx prisma db push
+```
+
+6. Run the development server:
+```bash
+npm run dev
+```
+
+7. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Demo Credentials
+
+- Email: `demo@traceguard.ai`
+- Password: `demo123`
+
+## Deployment
+
+### Deploy to Vercel
+
+1. Push your code to GitHub
+2. Import your repository on [Vercel](https://vercel.com)
+3. Add environment variables in Vercel dashboard
+4. Deploy!
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/traceguard-ai)
+
+### Production Database
+
+For production, use a managed PostgreSQL database:
+- [Neon](https://neon.tech) - Serverless PostgreSQL
+- [PlanetScale](https://planetscale.com) - Serverless MySQL
+- [Supabase](https://supabase.com) - PostgreSQL with additional features
+
+Update your `DATABASE_URL` environment variable in Vercel.
 
 ## Project Structure
 
 ```
 ├── prisma/
-│   └── schema.prisma          # Database schema
+│   └── schema.prisma      # Database schema
 ├── public/
-│   ├── logo.png               # Application logo
-│   └── manifest.json          # PWA manifest
+│   └── ...                # Static assets
 ├── src/
 │   ├── app/
-│   │   ├── api/
-│   │   │   ├── auth/          # Authentication routes
-│   │   │   │   ├── login/
-│   │   │   │   ├── logout/
-│   │   │   │   ├── me/
-│   │   │   │   └── register/
-│   │   │   ├── alerts/        # Alert management
-│   │   │   └── images/        # Image operations
-│   │   │       ├── detect/    # Duplicate detection
-│   │   │       ├── protect/   # Watermark embedding
-│   │   │       ├── upload/    # Image upload
-│   │   │       ├── user/      # User's images
-│   │   │       └── [id]/      # Single image operations
-│   │   ├── globals.css        # Global styles
-│   │   ├── layout.tsx         # Root layout
-│   │   └── page.tsx           # Main application
-│   ├── components/ui/         # shadcn/ui components
-│   ├── hooks/                 # Custom hooks
+│   │   ├── api/           # API routes
+│   │   ├── page.tsx       # Home page
+│   │   └── layout.tsx     # Root layout
+│   ├── components/
+│   │   ├── ui/            # UI components (shadcn)
+│   │   └── ...            # Custom components
 │   └── lib/
-│       ├── auth.ts            # Authentication utilities
-│       ├── db.ts              # Database client
-│       ├── fingerprint.ts     # Fingerprinting logic
-│       └── utils.ts           # Utility functions
-└── uploads/                   # Uploaded images storage
+│       ├── firebase.ts    # Firebase config
+│       └── ...            # Utilities
+├── .env.example           # Environment template
+├── vercel.json            # Vercel config
+└── package.json
 ```
 
-## How to Run Locally
+## Contributing
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd traceguard-ai
-   ```
-
-2. **Install dependencies**
-   ```bash
-   bun install
-   ```
-
-3. **Set up the database**
-   ```bash
-   bun run db:push
-   ```
-
-4. **Start the development server**
-   ```bash
-   bun run dev
-   ```
-
-5. **Open in browser**
-   Navigate to `http://localhost:3000`
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/logout` - Logout user
-- `GET /api/auth/me` - Get current user
-
-### Images
-- `POST /api/images/upload` - Upload new image
-- `POST /api/images/protect` - Protect image with watermark
-- `POST /api/images/detect` - Detect duplicates
-- `GET /api/images/user` - Get user's images
-- `GET /api/images/[id]` - Get single image
-- `DELETE /api/images/[id]` - Delete image
-
-### Alerts
-- `GET /api/alerts` - Get user alerts
-- `PUT /api/alerts` - Mark alerts as read
-
-## Features Explained
-
-### Image Fingerprinting
-The system generates a unique hash for each image using:
-- File content sampling (first 8KB, middle 4KB, last 4KB)
-- File size integration
-- SHA-256 hashing algorithm
-
-### Duplicate Detection
-Compares uploaded images against the database using:
-- Hash similarity calculation (character-by-character comparison)
-- Configurable threshold (default: 95%)
-- Exact and approximate match detection
-
-### Watermark Simulation
-For MVP purposes, watermark embedding is simulated:
-- Records watermark metadata in database
-- Generates ownership certificate
-- In production, would use steganography or invisible watermark libraries
-
-### Security
-- Password hashing with SHA-256 + salt
-- Session-based authentication with secure HTTP-only cookies
-- File type validation (JPG, PNG, WebP only)
-- File size limit (10MB max)
-
-## Environment Variables
-
-Create a `.env` file in the root directory:
-```env
-DATABASE_URL="file:./db/custom.db"
-NODE_ENV="development"
-```
-
-## PWA Features
-
-The application is PWA-ready with:
-- Installable on mobile devices
-- Offline-capable (with service worker)
-- App-like experience
-- Push notification ready (requires additional setup)
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT License
+This project is licensed under the MIT License.
 
 ---
 
-Built with ❤️ using Next.js, Tailwind CSS, and shadcn/ui
+Made with ❤️ by TraceGuard AI Team
